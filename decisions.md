@@ -43,3 +43,10 @@
 - **Decision:** PostgreSQL will be hosted on **Supabase**; connection string via backend-only `.env`.
 - **Reasoning:** User decision — no local PostgreSQL or Docker installed on the machine; Supabase provides hosted PostgreSQL.
 - **Note:** Alembic migrations must use the direct/session connection (port 5432), never the transaction pooler (6543), which rejects DDL. Documented in `backend/.env.example` and `README.md`.
+
+### 2026-09-28 — Supabase connection uses the session pooler (IPv4)
+
+- **Decision:** `DATABASE_URL` points at the **session pooler** `aws-0-ap-southeast-1.pooler.supabase.com:5432` with username `postgres.<project-ref>` and scheme `postgresql+psycopg://`.
+- **Reasoning:** The direct host (`db.<ref>.supabase.co`) publishes an **IPv6-only** DNS record and this development network is IPv4-only (`getaddrinfo` failed). The `pooler.<ref>.supabase.co` format does not exist for this project (NXDOMAIN). The pooler rejects a bare `postgres` username (`ENOIDENTIFIER`) because it is multi-tenant — the project ref must be in the username (`postgres.<ref>`).
+- **Alternatives considered:** IPv4 add-on for direct connection (paid, unnecessary); transaction pooler 6543 (rejected — breaks DDL).
+- **Impact:** Migrations and app traffic both go through port 5432 session pooling; format documented in `backend/.env.example` (no secrets committed).

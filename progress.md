@@ -2,10 +2,11 @@
 
 ## Current State Summary
 
-- **M0 COMPLETE** (commit `95fdc1d`); **M1 code complete** — status `Verification`: models, auth, authz, admin CLI all implemented; `pytest` **21/21**; live server verified (health 200; config-missing → clean 503).
-- ⏳ **M1 remaining:** run first Alembic migration against Supabase — blocked on user filling `backend/.env` (`DATABASE_URL` + `JWT_SECRET_KEY`).
-- ⏳ Uncommitted: M0 log close-out + all of M1 (awaiting user authorization to commit).
-- Next actions: (1) user adds `.env` credentials → run migration → mark TASK-002 Completed, (2) create `TASK-003` for M2 (ticket submission + customer portal).
+- **M0 COMPLETE** (commit `95fdc1d`); **M1 COMPLETE** (code commit `9253b4c`; migration `7d4a1330581a` applied to Supabase 2026-09-28; TASK-002 marked Completed).
+- Verified: `pytest` 21/21 · migration from empty DB (7 tables) · live end-to-end on real PostgreSQL (register→login→me, 401/409 paths) · lint+build pass · no secrets tracked.
+- Supabase reachable via **session pooler** (`aws-0-ap-southeast-1.pooler.supabase.com:5432`, username `postgres.<project-ref>`) — direct `db.` host is IPv6-only and unusable on this network (see `decisions.md`).
+- ⏳ Pending commit (user commits themselves): `backend/alembic/versions/7d4a1330581a_create_core_tables.py`, `.env.example` comment update, harness logs, TASK-002 status.
+- Next actions: (1) user commits pending files, (2) create `TASK-003` for M2 (ticket submission + customer portal), (3) optionally apply test-DB safety fix (conftest) before M6.
 
 ---
 
@@ -29,6 +30,15 @@
 - Discovered duplicate TASK-002 spec (pre-restart `TASK-002-data-model-auth.md` vs post-restart rewrite) → consolidated into the pre-restart approved spec; added its missing requirements: DB-free security tests (`test_security.py`) + admin CLI (`app/cli/create_admin.py`) + CLI tests.
 - Verified: `pytest` **21/21**, live server (health 200; `/api/auth/me` → 503 with config detail), frontend lint+build pass (untouched); servers stopped after.
 - Status: TASK-002 in Verification. Next: Supabase `.env` → migration → M2.
+
+### 2026-09-28 (session 2 — Supabase bring-up + M1 close-out)
+
+- User configured `backend/.env` with coaching. Connection journey: direct host `db.<ref>` = **IPv6-only** (unreachable from this IPv4-only network, `getaddrinfo` 11001); guessed `pooler.<ref>` host = NXDOMAIN; region identified as **ap-southeast-1 (Singapore)** → working host `aws-0-ap-southeast-1.pooler.supabase.com:5432`; pooler rejected bare `postgres` user (`ENOIDENTIFIER`) → correct username format **`postgres.<project-ref>`** (tested both candidates; connection succeeded).
+- `DATABASE_URL` + `JWT_SECRET_KEY` finalized in `.env` (never printed/committed).
+- **Migration:** `alembic revision --autogenerate` → `7d4a1330581a_create_core_tables.py`; `alembic upgrade head` ran clean from empty DB → 7 tables + `alembic_version` verified via information_schema.
+- **Live e2e on real PostgreSQL:** register 201 → duplicate 409 → login 200 → `/me` 200 → no token 401 → health 200; test user cleaned up (0 users remain). `pytest` re-run → 21/21.
+- TASK-002 → **Completed**. User made their first self-commit (`9253b4c`, M1). `.env.example` updated with pooler format (accidental indentation fixed); harness logs updated.
+- Status: M1 done. Next: pending commit of migration + logs, then TASK-003 (M2).
 
 ### 2026-09-27 (session 2 — independent review of M1)
 

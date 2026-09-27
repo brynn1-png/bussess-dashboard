@@ -2,7 +2,7 @@
 
 ## Current State Summary
 
-- M0 verified (commit `95fdc1d`); M1 verified via pytest **21/21** + live server checks (independently re-verified, session 2).
+- M0 verified (`95fdc1d`); M1 **fully verified** (`9253b4c`): pytest 21/21 + Alembic migration on Supabase + live end-to-end auth on real PostgreSQL (session 2, 2026-09-28).
 - Full details in the Result Log below.
 
 ---
@@ -10,6 +10,20 @@
 ## Result Log
 
 <!-- Format: date, outcome, verification performed, effects -->
+
+### 2026-09-28 — M1 live-database verification & close-out (TASK-002)
+
+- **Outcome:** Supabase connectivity established; first Alembic migration created and applied; auth flow verified end-to-end on real PostgreSQL; TASK-002 → Completed.
+- **Connection troubleshooting (for future reference):** direct `db.<ref>.supabase.co` = IPv6-only → unreachable on this IPv4-only network; `pooler.<ref>.supabase.co` = NXDOMAIN; working config = **session pooler** `aws-0-ap-southeast-1.pooler.supabase.com:5432` with username **`postgres.<project-ref>`** (bare `postgres` → `ENOIDENTIFIER`); scheme `postgresql+psycopg://`. Documented in `backend/.env.example`.
+- **Verification performed:**
+  - Connection test → `PostgreSQL 17.6` (aarch64), empty schema
+  - `alembic revision --autogenerate` → `7d4a1330581a_create_core_tables.py` (7 tables detected)
+  - `alembic upgrade head` → success; tables verified: `users, customers, tickets, ticket_messages, ai_analysis, workflows, workflow_runs, alembic_version`
+  - `pytest` → 21/21 passed (unchanged, SQLite)
+  - Live uvicorn vs real DB: register **201** → duplicate register **409** → login **200** → `GET /me` **200** (correct profile) → `GET /me` no token **401** → health **200**
+  - Cleanup: test user + customer row deleted; `users` count = 0
+- **Effects:** Database schema now exists on Supabase; M2 (tickets) can build on it. M1 committed by user as `9253b4c`; migration file + this log await the next commit.
+- **Risks/notes:** Test suite still runs on in-memory SQLite by design (decision logged 2026-09-27); `conftest.py` env-var fallback noted as a future safety fix (force SQLite) before demo data exists.
 
 ### 2026-09-27 — M1 Data Model + Auth (TASK-002)
 

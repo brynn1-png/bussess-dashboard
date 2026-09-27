@@ -1,8 +1,10 @@
 # TASK-002: Data Model + Authentication (M1)
 
-**Status:** Verification — implementation complete and tested; `alembic upgrade head` deferred until `DATABASE_URL` (Supabase) is provided
+**Status:** Completed
 
 **Created:** 2026-09-27
+
+**Completed:** 2026-09-28
 
 **Supersedes:** duplicate draft `TASK-002-auth-and-data-model.md` (removed 2026-09-27)
 
@@ -44,7 +46,7 @@ M0 delivered only a scaffold (health endpoint, no database access, no auth). Not
 - [x] `pytest` passes: admin CLI provisions admin role; idempotent; refuses customer-email conflict — `tests/test_admin_cli.py`
 - [x] Existing health test still passes; frontend build/lint unaffected (no frontend changes) — re-verified 2026-09-27
 - [x] No secrets committed; `.env` remains gitignored
-- [ ] `alembic upgrade head` succeeds from an empty database — **DEFERRED: `backend/.env` has empty `DATABASE_URL` (user: "I'll put Supabase later")**
+- [x] `alembic upgrade head` succeeds from an empty database — **ran 2026-09-28** against Supabase (revision `7d4a1330581a`; 7 tables verified via information_schema)
 
 ---
 
@@ -124,9 +126,10 @@ backend/alembic/                → env.py wired to Base.metadata (revision awai
 - [x] `pytest` — **21/21 passed** (security unit, auth integration, admin CLI, health regression)
 - [x] Live uvicorn: `/api/health` → 200; `/api/auth/me` unconfigured → 503 with actionable detail
 - [x] `npm run lint` + `npm run build` — pass (frontend untouched)
-- [ ] `alembic upgrade head` — run once `DATABASE_URL` is available (deferred)
+- [x] `alembic upgrade head` — **ran 2026-09-28** on Supabase session pooler from empty DB; all 7 tables + `alembic_version` verified
+- [x] Live end-to-end **on real PostgreSQL**: register 201 → duplicate register 409 → login 200 → `GET /me` 200 (correct user) → no token 401 → test user deleted (0 users remain)
 - [x] `git status` — no `.env`/secrets tracked
-- [ ] Changed files committed — **pending user authorization**
+- [x] M1 code committed as `9253b4c`; migration file + harness close-out follow-up commit pending user
 
 ---
 
