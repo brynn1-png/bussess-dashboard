@@ -50,3 +50,17 @@
 - **Reasoning:** The direct host (`db.<ref>.supabase.co`) publishes an **IPv6-only** DNS record and this development network is IPv4-only (`getaddrinfo` failed). The `pooler.<ref>.supabase.co` format does not exist for this project (NXDOMAIN). The pooler rejects a bare `postgres` username (`ENOIDENTIFIER`) because it is multi-tenant — the project ref must be in the username (`postgres.<ref>`).
 - **Alternatives considered:** IPv4 add-on for direct connection (paid, unnecessary); transaction pooler 6543 (rejected — breaks DDL).
 - **Impact:** Migrations and app traffic both go through port 5432 session pooling; format documented in `backend/.env.example` (no secrets committed).
+
+### 2026-09-28 — M2: ticket access rules, message/description duplication, client auth storage
+
+- **Decision (access):** Tickets/messages return **404** (not 403) for non-owners so existence is never leaked; customers may create tickets and append messages only — status transitions stay admin-only (M4); admin tokens get **403** on customer endpoints.
+- **Decision (data):** The opening message is stored twice — as `tickets.description` (NOT NULL from M1) and as the first `ticket_messages` row — avoiding a schema migration.
+- **Decision (client auth):** JWT kept in localStorage + `Authorization: Bearer` header (v1), consistent with the M1 API; HTTP-only cookie move deferred to a hardening pass.
+- **Reasoning:** Non-disclosure matches `.ai/context.md` §4/§7; description duplication is cheaper and lower-risk than a migration mid-milestone; localStorage keeps the API unchanged.
+- **Alternatives considered:** 403 responses (rejected — confirm a ticket exists to a stranger); making `description` nullable (rejected — requires migration, spec §6 gate); cookies (deferred, needs same-site/deployment review).
+
+### 2026-09-28 — Portal visual direction: inherit + elevate
+
+- **Decision:** Portal UI extends the existing M0 identity (slate background, ink text, emerald accent, Tailwind) instead of introducing a new palette/typography; HomePage stays as an entry point with login/register/portal links.
+- **Reasoning:** User choice via design-skill probe; `.ai/architecture.md` §10 (portfolio polish) and an established visual world should be inherited rather than replaced (impeccable: "a section inherits its surface").
+- **Alternatives considered:** strict scaffold-level styling (too plain for portfolio); bolder new identity (unnecessary divergence mid-product).

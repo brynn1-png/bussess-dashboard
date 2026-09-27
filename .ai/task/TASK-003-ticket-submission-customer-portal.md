@@ -1,6 +1,6 @@
 # TASK-003: Ticket Submission + Customer Portal (M2)
 
-**Status:** Created — awaiting user approval
+**Status:** Completed (2026-09-28) — all acceptance criteria verified incl. user's manual two-account UI walkthrough; commit pending user
 
 **Created:** 2026-09-28
 
@@ -42,15 +42,15 @@ M1 delivered auth APIs and the schema, but nothing a user can *do*: there is no 
 
 ## 4. Acceptance Criteria
 
-- [ ] Pytest: register-less customer flow — unauthenticated `POST /api/tickets` → 401
-- [ ] Pytest: create ticket → 201; `GET /api/tickets` lists it; `GET /api/tickets/{id}` returns it with the initial message
-- [ ] Pytest: **cross-customer isolation** — customer B gets 404 on customer A's ticket (GET and POST message)
-- [ ] Pytest: invalid payloads (empty subject/short message) → 422
-- [ ] Pytest: follow-up message appends and appears in the thread
-- [ ] Existing suite still passes (21/21 + new tests)
-- [ ] `npm run lint` and `npm run build` pass
-- [ ] Manual UI walkthrough: signup → login → submit ticket → see it in list → open detail → add follow-up; validation errors display; second customer cannot see it
-- [ ] No secrets committed; token never logged
+- [x] Pytest: register-less customer flow — unauthenticated `POST /api/tickets` → 401
+- [x] Pytest: create ticket → 201; `GET /api/tickets` lists it; `GET /api/tickets/{id}` returns it with the initial message
+- [x] Pytest: **cross-customer isolation** — customer B gets 404 on customer A's ticket (GET and POST message)
+- [x] Pytest: invalid payloads (empty subject/short message) → 422
+- [x] Pytest: follow-up message appends and appears in the thread
+- [x] Existing suite still passes (21/21 + new tests → 31/31)
+- [x] `npm run lint` and `npm run build` pass
+- [x] Manual UI walkthrough: signup → login → submit ticket → see it in list → open detail → add follow-up; validation errors display; second customer cannot see it — **confirmed by user ("yes it is working")**
+- [x] No secrets committed; token never logged
 
 ---
 
@@ -121,11 +121,20 @@ Frontend
 - UI must not duplicate validation logic as the *only* gate — backend stays authoritative.
 
 ## 10. Verification
-- [ ] `pytest` — new ticket tests + full suite green
-- [ ] `npm run lint` + `npm run build`
-- [ ] Manual end-to-end walkthrough (two accounts) against the dev server, live backend on Supabase
-- [ ] Changed files reviewed; no secrets tracked
+- [x] `pytest` — new ticket tests + full suite green (31/31)
+- [x] `npm run lint` + `npm run build`
+- [x] Manual end-to-end walkthrough (two accounts) against the dev server, live backend on Supabase — **confirmed by user**
+- [x] Changed files reviewed; no secrets tracked
 
 ## 11. Notes
 - Backend tests stay on SQLite (decision 2026-09-27); a final live check runs against Supabase as done in M1 close-out.
 - If implementation reveals a need for schema changes, stop per `.ai/workflow.md` §6 and discuss before proceeding.
+
+## 12. Verification Record (2026-09-28)
+
+- **Implementation note (no schema change):** `tickets.description` is NOT NULL (M1 model) — the opening message is stored both as the ticket description and as the first `ticket_messages` row. Chosen over making the column nullable (would require a migration; §6 says stop and discuss).
+- **Backend:** `pytest` → **31/31 passed** (10 new ticket tests: 401 unauth, 201 create + initial message, 422 invalid payloads, 403 admin, scoped list, detail thread, 404 unknown/foreign ticket, cross-customer isolation, follow-up append, 422 empty reply).
+- **Frontend:** `npm run lint` → clean; `npm run build` (tsc --noEmit + vite) → passes. Design skill's mechanical detector (`impeccable detect`) over all changed UI targets → no findings.
+- **Live end-to-end on Supabase (real PostgreSQL, 16/16):** health 200 · register A/B 201 · login 200 · anon ticket 401 · create 201 (`open` + 1 customer message) · invalid payload 422 · A list/detail 200 · B list excludes A's ticket · B GET/POST on A's ticket 404 · A follow-up 201 → thread 2 messages · bad credentials 401.
+- **Cleanup:** walkthrough accounts + ticket deleted from Supabase (verified gone); the user's own pre-existing account/ticket left untouched.
+- **Pending at completion:** none (manual UI walkthrough confirmed by user 2026-09-28; M2 commit pending user).

@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.auth import router as auth_router
 from app.api.routes import router as api_router
+from app.api.tickets import router as tickets_router
 from app.core.config import ConfigurationError, settings
 
 
@@ -21,6 +22,7 @@ def create_app() -> FastAPI:
 
     app.include_router(api_router)
     app.include_router(auth_router)
+    app.include_router(tickets_router)
     return app
 
 

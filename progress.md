@@ -2,11 +2,11 @@
 
 ## Current State Summary
 
-- **M0 COMPLETE** (commit `95fdc1d`); **M1 COMPLETE** (code commit `9253b4c`; migration `7d4a1330581a` applied to Supabase 2026-09-28; TASK-002 marked Completed).
-- Verified: `pytest` 21/21 · migration from empty DB (7 tables) · live end-to-end on real PostgreSQL (register→login→me, 401/409 paths) · lint+build pass · no secrets tracked.
+- **M0 COMPLETE** (commit `95fdc1d`); **M1 COMPLETE** (code commit `9253b4c`; migration `7d4a1330581a` applied to Supabase 2026-09-28; TASK-002 Completed).
+- **M2 (TASK-003) implemented, status Verification:** ticket API (create/list/detail/messages, 404 isolation) + customer portal UI (login/register/portal list/new/detail). Verified: pytest 31/31 · lint+build clean · design detector clean · live e2e on Supabase 16/16 · walkthrough data cleaned up.
 - Supabase reachable via **session pooler** (`aws-0-ap-southeast-1.pooler.supabase.com:5432`, username `postgres.<project-ref>`) — direct `db.` host is IPv6-only and unusable on this network (see `decisions.md`).
-- ⏳ Pending commit (user commits themselves): `backend/alembic/versions/7d4a1330581a_create_core_tables.py`, `.env.example` comment update, harness logs, TASK-002 status.
-- Next actions: (1) user commits pending files, (2) create `TASK-003` for M2 (ticket submission + customer portal), (3) optionally apply test-DB safety fix (conftest) before M6.
+- ⏳ Pending: (1) **user manual UI walkthrough** (two accounts, acceptance criterion), (2) user commit — M1 close-out files + all M2 work (user commits themselves), (3) optional: `git commit --amend` to fix `9253b4c`'s "commit" message (local, unpushed).
+- Next actions: walkthrough → TASK-003 Completed → M3 (AI analysis) spec; before M6 apply test-DB safety fix (force `DATABASE_URL=sqlite://` in `tests/conftest.py`).
 
 ---
 
@@ -47,3 +47,12 @@
 - Review findings (no code changed by this session): (1) **data-loss risk** — `tests/conftest.py` uses `os.environ.setdefault("DATABASE_URL", ...)`, so a shell-exported `DATABASE_URL` would make tests run against (and `drop_all` on) a real DB; recommend forcing `sqlite://` in tests. (2) No Alembic revision yet — M1 stays in Verification until `alembic upgrade head` runs on Supabase. (3) PLAN M3 expects `tickets.analysis_status`; schema currently only has `ai_analysis.status` — revisit at M3. (4) Minor: register select-then-insert race → possible 500 under concurrency; CLI `--password` visible in process list.
 - Note: one cleanup command during verification ran a blanket `Stop-Process` on python processes (before any of my own servers existed) — may have terminated the other session's local server if one was running; nothing restartable was lost.
 - Status: M1 code + tests verified; TASK-002 remains **Verification** (migration deferred). Next: user `.env` (`DATABASE_URL` + `JWT_SECRET_KEY`) → migration → M1 Completed → TASK-003 (M2).
+
+### 2026-09-28 (session 3 — M2 implementation, TASK-003)
+
+- Created `TASK-003` spec from `PLAN.md` §M2; user approved (and pushed M1 close-out themselves first). Design skill `impeccable` loaded for the UI work (probe answered: **inherit + elevate**, HomePage stays entry point).
+- **Backend:** `schemas/ticket.py` (CreateTicketRequest/AddMessageRequest/response models), `services/ticket_service.py` (ownership + customer scoping; 404 non-disclosure; admin → 403), `api/tickets.py` thin routes (create/list/detail/messages), router wired in `main.py`, 10 tests in `test_tickets.py`.
+- Fixed en route: `tickets.description` NOT NULL not set by service → store opening message as description too (no migration). Lint feedback: split auth module (`auth-context.ts` + `AuthProvider.tsx`) for react-refresh; ticket-detail effect made free of synchronous setState.
+- **Frontend:** `services/api.ts` (Bearer header, typed `ApiError`, auth + ticket calls), `features/auth` (AuthProvider/useAuth/Protected), pages: Login, Register, portal (PortalLayout, TicketList, NewTicket, TicketDetail), shared `components/ui.tsx`, `lib/format.ts`, HomePage CTAs, `index.css` browser-surface theming (selection/caret/focus).
+- **Verified:** pytest 31/31 · lint + build clean · `impeccable detect` → no findings · live e2e vs Supabase 16/16 (isolation 404s included) · walkthrough test data cleaned from DB (user's own account untouched).
+- Status: TASK-003 **Verification** — pending user manual two-account UI walkthrough + user commit of M2 files. Next: walkthrough → Completed → M3 spec.

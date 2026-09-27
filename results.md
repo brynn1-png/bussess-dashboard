@@ -3,6 +3,7 @@
 ## Current State Summary
 
 - M0 verified (`95fdc1d`); M1 **fully verified** (`9253b4c`): pytest 21/21 + Alembic migration on Supabase + live end-to-end auth on real PostgreSQL (session 2, 2026-09-28).
+- M2 (TASK-003) **implemented + verified** 2026-09-28 (session 3): pytest 31/31, lint+build clean, live ticket e2e on Supabase 16/16; manual UI walkthrough pending user.
 - Full details in the Result Log below.
 
 ---
@@ -10,6 +11,18 @@
 ## Result Log
 
 <!-- Format: date, outcome, verification performed, effects -->
+
+### 2026-09-28 — M2 Ticket Submission + Customer Portal (TASK-003)
+
+- **Outcome:** Full customer-facing feature shipped: ticket API + portal UI (login, register, ticket list, support form, ticket detail with message thread). Implementation notes: opening message also stored in `tickets.description` (NOT NULL, no migration needed); cross-customer access returns **404** (existence not leaked); status changes remain admin-only (M4).
+- **Verification performed:**
+  - `pytest` → **31/31 passed** (10 new tests incl. cross-customer isolation, 401/403/404/422 paths)
+  - `npm run lint` → clean; `npm run build` (tsc + vite) → passes
+  - `impeccable detect` (design skill mechanical detector) over changed UI targets → no findings
+  - Live e2e vs Supabase through the running uvicorn (16/16): health, register A/B, login, anon 401, create 201 (`open` + initial message), 422 invalid payload, scoped lists, B→A ticket GET/POST 404, follow-up 201 → thread 2, bad credentials 401
+  - Cleanup: walkthrough users/customer/ticket rows deleted from Supabase (verified gone); user's own account left untouched
+- **Effects:** M3 (AI analysis) and M4 (admin dashboard) now have real data flows to build on. UI verification requires the user's manual two-account walkthrough (desktop browser not connected to this session).
+- **Risks/notes:** token stored in localStorage for v1 (documented in TASK-003 §5, revisit at hardening); design decision "inherit + elevate" — portal extends the M0 slate/emerald identity.
 
 ### 2026-09-28 — M1 live-database verification & close-out (TASK-002)
 
