@@ -17,6 +17,11 @@ export interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Landing route for a signed-in user: admins get the console, others the portal. */
+export function homePath(role: User["role"] | null | undefined): string {
+  return role === "admin" ? "/admin" : "/portal";
+}
+
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");

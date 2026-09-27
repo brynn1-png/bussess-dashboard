@@ -4,7 +4,8 @@
 
 - M0 verified (`95fdc1d`); M1 **fully verified** (`9253b4c`): pytest 21/21 + Alembic migration on Supabase + live end-to-end auth on real PostgreSQL (session 2, 2026-09-28).
 - M2 (TASK-003) **verified** 2026-09-28: pytest 31/31, lint+build clean, live ticket e2e 16/16, user walkthrough confirmed → Completed.
-- M3 (TASK-004) **verified** 2026-09-28: pytest 36/36, lint+build clean, live analysis e2e 11/11 on Supabase → Completed (pending commit).
+- M3 (TASK-004) **verified** 2026-09-28: pytest 36/36, lint+build clean, live analysis e2e 11/11 on Supabase → Completed (committed `1c66b85`).
+- M4 (TASK-005) **verified** 2026-09-28: pytest 47/47, lint+build clean, detector `[]`, live admin e2e 36/36 on Supabase → Verification pending user walkthrough + commit.
 - Full details in the Result Log below.
 
 ---
@@ -12,6 +13,16 @@
 ## Result Log
 
 <!-- Format: date, outcome, verification performed, effects -->
+
+### 2026-09-28 — M4 Admin Dashboard (TASK-005)
+
+- **Outcome:** Full admin console shipped. Backend: 6 `/api/admin/*` routes, all behind `require_admin` (first real exercise of the M1 guard) — overview with server-side SQL aggregates (status counts, priority distribution + numeric `avg_priority`, customers, AI pipeline counts incl. `human_confirmed`/`awaiting_review`, 5 recent tickets), cross-customer ticket list with `?status=` filter, full detail (messages + customer + analysis), guarded PATCH updates (status/category/priority; 422 on invalid/empty bodies, 404 unknown), AI review PATCH (`suggested_response` + `is_human_confirmed` — provenance preserved), customers list with `ticket_count`. Frontend: `/admin` area (role-gated layout with section tabs), overview cards/bars/panels, filterable ticket table, ticket detail with management panel (two-step **Confirm close**) and AI review panel (editable suggested response → **Save & confirm** → Human-confirmed badge), customers table; login/register redirects are role-aware (admin → `/admin`); `/portal` is customer-only with a friendly "wrong area" screen for admins.
+- **Verification performed:**
+  - `pytest` → **47/47 passed** (11 new; authz matrix asserts **401 anonymous / 403 customer on every admin route** with valid bodies so only auth can fail)
+  - `npm run lint` clean; `npm run build` (tsc + vite) passes; `impeccable detect` over all changed UI files → `[]`
+  - Live vs Supabase through running uvicorn → **36/36**: authz spot checks, overview aggregates (incl. AI `completed ≥ 2` from the mock pipeline), list + filter + 422, detail (customer/messages/analysis `completed`), PATCH persistence + 422/404 paths, analysis edit+confirm persisted with `provider` provenance, customers `ticket_count=2` — all temp rows deleted afterwards
+- **Effects:** M5 (workflows/automation) can build on managed ticket state; AI suggestions now have a human sign-off trail required by context §4.
+- **Risks/notes:** UI walkthrough not run here (no desktop browser connected) — falls to the user's manual step; last-write-wins on concurrent status edits (accepted v1 debt, TASK-005 §9); category/priority cannot be cleared in v1 (PATCH `None` = unchanged); an orphaned pre-M4 uvicorn worker briefly kept serving the old app from `:8000` after a restart — killed and confirmed live.
 
 ### 2026-09-28 — M3 AI Analysis Pipeline (TASK-004)
 

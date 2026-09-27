@@ -8,13 +8,13 @@ import {
   inputClass,
   primaryButtonClass,
 } from "../components/ui";
-import { useAuth } from "../features/auth/auth-context";
+import { homePath, useAuth } from "../features/auth/auth-context";
 import { ApiError } from "../services/api";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function RegisterPage() {
-  const { status, register } = useAuth();
+  const { status, user, register } = useAuth();
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
@@ -30,7 +30,7 @@ export function RegisterPage() {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (status === "authenticated") return <Navigate to="/portal" replace />;
+  if (status === "authenticated") return <Navigate to={homePath(user?.role)} replace />;
 
   function validate(): boolean {
     const errors: typeof fieldErrors = {};

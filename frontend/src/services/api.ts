@@ -171,3 +171,142 @@ export function addTicketMessage(
     body: JSON.stringify({ content }),
   });
 }
+
+// --- Admin (M4) types ---------------------------------------------------------
+
+export interface StatusCounts {
+  open: number;
+  in_progress: number;
+  resolved: number;
+  closed: number;
+}
+
+export interface PriorityCounts {
+  low: number;
+  medium: number;
+  high: number;
+  urgent: number;
+  unassigned: number;
+}
+
+export interface AiCounts {
+  completed: number;
+  pending: number;
+  failed: number;
+  human_confirmed: number;
+  awaiting_review: number;
+}
+
+export interface AdminTicketSummary {
+  id: number;
+  subject: string;
+  status: TicketStatus;
+  category: string | null;
+  priority: TicketPriority | null;
+  customer_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminOverview {
+  total_tickets: number;
+  total_customers: number;
+  /** 1 = low … 4 = urgent; null when nothing assigned yet. */
+  avg_priority: number | null;
+  statuses: StatusCounts;
+  priorities: PriorityCounts;
+  ai: AiCounts;
+  recent_tickets: AdminTicketSummary[];
+}
+
+export interface AdminAnalysis {
+  id: number;
+  status: "pending" | "completed" | "failed";
+  category: string | null;
+  priority: TicketPriority | null;
+  sentiment: "positive" | "neutral" | "negative" | null;
+  summary: string | null;
+  suggested_response: string | null;
+  is_human_confirmed: boolean;
+  provider: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomerRef {
+  id: number;
+  full_name: string;
+  email: string;
+}
+
+export interface AdminTicketDetail {
+  id: number;
+  subject: string;
+  description: string;
+  status: TicketStatus;
+  category: string | null;
+  priority: TicketPriority | null;
+  created_at: string;
+  updated_at: string;
+  customer: CustomerRef;
+  messages: TicketMessage[];
+  analysis: AdminAnalysis | null;
+}
+
+export interface AdminCustomer {
+  id: number;
+  full_name: string;
+  email: string;
+  ticket_count: number;
+  created_at: string;
+}
+
+// --- Admin (M4) calls ---------------------------------------------------------
+
+export function getAdminOverview(): Promise<AdminOverview> {
+  return request<AdminOverview>("/admin/overview");
+}
+
+export function listAdminTickets(
+  status?: TicketStatus,
+): Promise<AdminTicketSummary[]> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return request<AdminTicketSummary[]>(`/admin/tickets${query}`);
+}
+
+export function getAdminTicket(id: number): Promise<AdminTicketDetail> {
+  return request<AdminTicketDetail>(`/admin/tickets/${id}`);
+}
+
+/** PATCH — only include fields to change; never send an empty object. */
+export function updateAdminTicket(
+  id: number,
+  payload: {
+    status?: TicketStatus;
+    category?: string;
+    priority?: TicketPriority;
+  },
+): Promise<AdminTicketSummary> {
+  return request<AdminTicketSummary>(`/admin/tickets/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminAnalysis(
+  id: number,
+  payload: {
+    suggested_response?: string;
+    is_human_confirmed?: boolean;
+  },
+): Promise<AdminAnalysis> {
+  return request<AdminAnalysis>(`/admin/tickets/${id}/analysis`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listAdminCustomers(): Promise<AdminCustomer[]> {
+  return request<AdminCustomer[]>("/admin/customers");
+}

@@ -6,6 +6,11 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { AdminLayout } from "./pages/admin/AdminLayout";
+import { AdminCustomersPage } from "./pages/admin/AdminCustomersPage";
+import { AdminOverviewPage } from "./pages/admin/AdminOverviewPage";
+import { AdminTicketDetailPage } from "./pages/admin/AdminTicketDetailPage";
+import { AdminTicketListPage } from "./pages/admin/AdminTicketListPage";
 import { PortalLayout } from "./pages/portal/PortalLayout";
 import { NewTicketPage } from "./pages/portal/NewTicketPage";
 import { TicketDetailPage } from "./pages/portal/TicketDetailPage";
@@ -22,7 +27,7 @@ export default function App() {
           <Route
             path="/portal"
             element={
-              <Protected>
+              <Protected role="customer">
                 <PortalLayout />
               </Protected>
             }
@@ -30,6 +35,19 @@ export default function App() {
             <Route index element={<TicketListPage />} />
             <Route path="new" element={<NewTicketPage />} />
             <Route path="tickets/:ticketId" element={<TicketDetailPage />} />
+          </Route>
+          <Route
+            path="/admin"
+            element={
+              <Protected role="admin">
+                <AdminLayout />
+              </Protected>
+            }
+          >
+            <Route index element={<AdminOverviewPage />} />
+            <Route path="tickets" element={<AdminTicketListPage />} />
+            <Route path="tickets/:ticketId" element={<AdminTicketDetailPage />} />
+            <Route path="customers" element={<AdminCustomersPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

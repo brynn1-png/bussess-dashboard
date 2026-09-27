@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 
 import {
   ErrorAlert,
@@ -8,14 +8,13 @@ import {
   inputClass,
   primaryButtonClass,
 } from "../components/ui";
-import { useAuth } from "../features/auth/auth-context";
+import { homePath, useAuth } from "../features/auth/auth-context";
 import { ApiError } from "../services/api";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function LoginPage() {
-  const { status, login } = useAuth();
-  const navigate = useNavigate();
+  const { status, user, login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +22,8 @@ export function LoginPage() {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (status === "authenticated") return <Navigate to="/portal" replace />;
+  // Role-aware landing: admins → /admin, customers → /portal.
+  if (status === "authenticated") return <Navigate to={homePath(user?.role)} replace />;
 
   function validate(): boolean {
     const errors: typeof fieldErrors = {};
@@ -41,7 +41,8 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       await login(email.trim(), password);
-      navigate("/portal", { replace: true });
+      // Redirect comes from the authenticated <Navigate> above, which reads
+      // the fresh role from context — a navigate() here would use a stale one.
     } catch (err) {
       setRequestError(
         err instanceof ApiError && err.status === 401

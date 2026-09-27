@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 
+from app.api.admin import router as admin_router
 from app.api.auth import router as auth_router
 from app.api.routes import router as api_router
 from app.api.tickets import router as tickets_router
@@ -23,6 +24,7 @@ def create_app() -> FastAPI:
     app.include_router(api_router)
     app.include_router(auth_router)
     app.include_router(tickets_router)
+    app.include_router(admin_router)
     return app
 
 

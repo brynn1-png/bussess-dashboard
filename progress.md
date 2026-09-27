@@ -2,11 +2,11 @@
 
 ## Current State Summary
 
-- **M0 COMPLETE** (`95fdc1d`); **M1 COMPLETE** (`9253b4c` + migration `7d4a1330581a` on Supabase, TASK-002 Completed); **M2 COMPLETE** (TASK-003 Completed — user walkthrough confirmed; committed by user through `a0ce746`).
-- **M3 (TASK-004) implemented, status Completed pending commit:** AI analysis pipeline — `backend/app/ai/` (protocol + Pydantic validation + deterministic MockProvider), background trigger after ticket creation, failure isolation (never raises), ticket category/priority write-back, `urgent` badge. Verified: pytest **36/36** · lint+build clean · detector clean · live vs Supabase **11/11** · walkthrough data cleaned.
+- **M0 COMPLETE** (`95fdc1d`); **M1 COMPLETE** (`9253b4c` + migration `7d4a1330581a` on Supabase, TASK-002 Completed); **M2 COMPLETE** (TASK-003 Completed — user walkthrough confirmed; committed through `a0ce746`); **M3 COMPLETE** (TASK-004 Completed, committed as `1c66b85`).
+- **M4 (TASK-005) implemented, status Verification:** admin dashboard — `/api/admin/*` (6 routes, every one `require_admin`), overview aggregates incl. numeric `avg_priority`, cross-customer ticket list + management PATCH, AI review with `is_human_confirmed` provenance, customers list; frontend `/admin` (role gate, role-aware login redirect, layout/overview/list/detail/customers). Verified: pytest **47/47** · lint+build clean · detector `[]` · live vs Supabase **36/36** (temp data cleaned). Pending: user manual walkthrough + commit.
 - Supabase reachable via **session pooler** (`aws-0-ap-southeast-1.pooler.supabase.com:5432`, username `postgres.<project-ref>`) — direct `db.` host is IPv6-only (see `decisions.md`).
-- ⏳ Pending: (1) user commits M3 files, (2) optional: rename local messages "commit"/"comit" (all still unpushed), (3) before M6: test-DB safety fix (force `DATABASE_URL=sqlite://` in `tests/conftest.py`).
-- Next actions: commit → create `TASK-005` for **M4 (Admin Dashboard)** — overview counts, all-tickets management, AI review UI (`is_human_confirmed`), customers list.
+- ⏳ Pending: (1) user walkthrough + commit of M4 files, (2) optional: rename local messages "commit"/"comit" (all still unpushed), (3) before M6: test-DB safety fix (force `DATABASE_URL=sqlite://` in `tests/conftest.py`), (4) real AI provider selection (deferred from M3 — before M4/M6 exit).
+- Next actions: walkthrough → TASK-005 Completed → user commit → create `TASK-006` for **M5** per PLAN.
 
 ---
 
@@ -65,3 +65,12 @@
 - **Tests (5):** happy path + write-back + `is_human_confirmed=False`; deterministic mock; provider crash → ticket intact/failed; malformed output → validation failed/no partial write; unknown config → failed. En route fix: helper returned token object instead of `access_token` → 401s (fixed).
 - **Verified:** pytest **36/36** · lint+build clean · `impeccable detect` → `[]` · live vs Supabase **11/11** (billing/negative/urgent analysis, write-back, cleanup) — uvicorn restarted in background by assistant after user's terminal closed (port 8000).
 - Status: TASK-004 **Completed** pending user commit. Next: commit → TASK-005 (M4 Admin Dashboard) spec.
+
+### 2026-09-28 (session 5 — M4 Admin Dashboard, TASK-005)
+
+- User approved TASK-005 → implemented end-to-end.
+- **Backend:** `schemas/admin.py` (overview/detail/update/customer schemas), `services/admin_service.py` (server-side SQL aggregates incl. numeric `avg_priority`, cross-customer queries, guarded PATCH — only non-null fields applied; category/priority not clearable in v1), `api/admin.py` (6 routes, every one `Depends(require_admin)`, thin → service), router wired in `main.py`; `tests/test_admin_api.py` (11 tests incl. the 401/403 matrix over **every** admin route).
+- **Frontend:** `api.ts` admin types + calls; `Protected` optional `role` prop with a "wrong area" screen; role-aware login/register redirect via `homePath`; `pages/admin/` — AdminLayout (section tabs), Overview (KPI + status cards → filtered list, priority bars, AI pipeline panel, recent tickets), TicketList (shareable `?status=` chips + table), TicketDetail (management panel with two-step **Confirm close**, AI review panel: chips/summary/editable suggested response/**Save & confirm** → Human-confirmed badge, messages thread, customer card), Customers (table); `/admin` routes nested under `Protected role="admin"`; `/portal` now `role="customer"`.
+- **Verified:** pytest **47/47** (11 new) · `npm run lint` clean · `npm run build` passes · `impeccable detect` → `[]` · live vs Supabase **36/36** (incl. anon 401 / customer 403 spot checks, aggregates, filters, PATCH persistence, analysis confirm + provider provenance) — all temp admin/customer/ticket rows cleaned afterwards.
+- En route fixes: stray placeholder route removed from `admin.py`; deprecated 422 constant updated; stale post-login `navigate()` (would strand admins on `/portal`) replaced by context-driven `<Navigate>`; react-hooks v7 lint findings (sync `setState` in effects, refs read in render) resolved using the portal pattern; an orphaned pre-M4 uvicorn worker kept answering `:8000` with the old app after restart → killed, admin routes confirmed live via OpenAPI.
+- Status: TASK-005 **Verification** — pending user manual walkthrough + commit (browser not connected to this session, so the UI walkthrough falls to the user as planned). Next: walkthrough → Completed → M5 spec.
