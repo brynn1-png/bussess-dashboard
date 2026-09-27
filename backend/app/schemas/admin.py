@@ -92,6 +92,7 @@ class AdminTicketDetail(BaseModel):
     status: TicketStatus
     category: str | None
     priority: TicketPriority | None
+    tags: list[str] = []  # workflow "add tag" target; [] on pre-migration rows
     created_at: datetime
     updated_at: datetime
     customer: CustomerRef

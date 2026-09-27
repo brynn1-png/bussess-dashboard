@@ -292,6 +292,15 @@ export function AdminTicketDetailPage() {
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <StatusBadge status={ticket.status} />
           {ticket.priority && <PriorityBadge priority={ticket.priority} />}
+          {ticket.tags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200"
+              title="Added by a workflow"
+            >
+              {tag}
+            </span>
+          ))}
           <span className="text-xs text-slate-500">
             {ticket.customer.full_name} · opened {formatDateTime(ticket.created_at)}
           </span>

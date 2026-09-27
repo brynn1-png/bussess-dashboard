@@ -7,10 +7,13 @@ import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { AdminLayout } from "./pages/admin/AdminLayout";
+import { AdminAnalyticsPage } from "./pages/admin/AdminAnalyticsPage";
 import { AdminCustomersPage } from "./pages/admin/AdminCustomersPage";
 import { AdminOverviewPage } from "./pages/admin/AdminOverviewPage";
 import { AdminTicketDetailPage } from "./pages/admin/AdminTicketDetailPage";
 import { AdminTicketListPage } from "./pages/admin/AdminTicketListPage";
+import { AdminWorkflowFormPage } from "./pages/admin/AdminWorkflowFormPage";
+import { AdminWorkflowsPage } from "./pages/admin/AdminWorkflowsPage";
 import { PortalLayout } from "./pages/portal/PortalLayout";
 import { NewTicketPage } from "./pages/portal/NewTicketPage";
 import { TicketDetailPage } from "./pages/portal/TicketDetailPage";
@@ -47,6 +50,10 @@ export default function App() {
             <Route index element={<AdminOverviewPage />} />
             <Route path="tickets" element={<AdminTicketListPage />} />
             <Route path="tickets/:ticketId" element={<AdminTicketDetailPage />} />
+            <Route path="workflows" element={<AdminWorkflowsPage />} />
+            <Route path="workflows/new" element={<AdminWorkflowFormPage />} />
+            <Route path="workflows/:workflowId" element={<AdminWorkflowFormPage />} />
+            <Route path="analytics" element={<AdminAnalyticsPage />} />
             <Route path="customers" element={<AdminCustomersPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

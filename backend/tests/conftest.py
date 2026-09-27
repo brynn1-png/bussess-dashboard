@@ -6,7 +6,10 @@ persistent store remains PostgreSQL per architecture.md).
 
 import os
 
-os.environ.setdefault("DATABASE_URL", "sqlite://")
+# UNCONDITIONAL (safety): tests must never reach PostgreSQL — `drop_all` would
+# wipe it. A pre-set DATABASE_URL (e.g. from backend/.env or the shell) must
+# not win here the way `setdefault` allowed.
+os.environ["DATABASE_URL"] = "sqlite://"
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-not-for-production")
 os.environ.setdefault("DEBUG", "false")
 

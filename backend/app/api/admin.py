@@ -18,7 +18,8 @@ from app.schemas.admin import (
     UpdateAnalysisRequest,
     UpdateTicketRequest,
 )
-from app.services import admin_service
+from app.schemas.workflow import AnalyticsResponse
+from app.services import admin_service, workflow_service
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -37,6 +38,16 @@ def _require_fields(payload: UpdateTicketRequest | UpdateAnalysisRequest) -> Non
             status_code=http_status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="No fields to update",
         )
+
+
+@router.get("/analytics", response_model=AnalyticsResponse)
+def analytics(
+    days: int = Query(default=30, ge=1, le=90),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> AnalyticsResponse:
+    """Windowed aggregates (M5). `days` outside 1..90 is a 422."""
+    return AnalyticsResponse.model_validate(workflow_service.analytics(db, days))
 
 
 @router.get("/overview", response_model=OverviewResponse)

@@ -65,7 +65,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(response.status, detailToMessage(detail));
   }
 
-  return (await response.json()) as T;
+  // 204 No Content (workflow delete) has no body to parse.
+  const raw = await response.text();
+  if (!raw) return undefined as T;
+  return JSON.parse(raw) as T;
 }
 
 // --- Types (mirror the backend response schemas) -----------------------------
@@ -247,6 +250,8 @@ export interface AdminTicketDetail {
   status: TicketStatus;
   category: string | null;
   priority: TicketPriority | null;
+  /** Workflow "add tag" chips — [] until a workflow tags the ticket. */
+  tags: string[];
   created_at: string;
   updated_at: string;
   customer: CustomerRef;
@@ -309,4 +314,125 @@ export function updateAdminAnalysis(
 
 export function listAdminCustomers(): Promise<AdminCustomer[]> {
   return request<AdminCustomer[]>("/admin/customers");
+}
+
+// --- Workflows + analytics (M5) types -----------------------------------------
+
+export type WorkflowConditionField =
+  | "category"
+  | "priority"
+  | "sentiment"
+  | "status";
+
+export type WorkflowActionType =
+  | "set_priority"
+  | "add_tag"
+  | "generate_suggested_response"
+  | "record_notification";
+
+export interface WorkflowCondition {
+  field: WorkflowConditionField;
+  value: string;
+}
+
+export interface WorkflowAction {
+  type: WorkflowActionType;
+  value: string;
+}
+
+export interface WorkflowRunCounts {
+  success: number;
+  failed: number;
+  skipped: number;
+}
+
+export interface Workflow {
+  id: number;
+  name: string;
+  is_active: boolean;
+  trigger: string;
+  /** Raw stored config — the backend validated it on write. */
+  conditions: WorkflowCondition[];
+  actions: WorkflowAction[];
+  created_at: string;
+  run_counts: WorkflowRunCounts;
+}
+
+export type WorkflowRunStatus = "success" | "failed" | "skipped";
+
+export interface WorkflowRun {
+  id: number;
+  workflow_id: number;
+  status: WorkflowRunStatus;
+  details: Record<string, unknown> | unknown[] | null;
+  created_at: string;
+}
+
+export interface WorkflowPayload {
+  name: string;
+  is_active?: boolean;
+  conditions?: WorkflowCondition[];
+  actions: WorkflowAction[];
+}
+
+export interface AnalyticsCategoryCount {
+  category: string;
+  count: number;
+}
+
+export interface AnalyticsDayCount {
+  date: string; // YYYY-MM-DD
+  count: number;
+}
+
+export interface AdminAnalytics {
+  days: number;
+  /** All-time count; the windowed numbers live in the slices below. */
+  total_tickets: number;
+  by_status: StatusCounts;
+  by_category: AnalyticsCategoryCount[];
+  by_day: AnalyticsDayCount[];
+  ai: { completed: number; human_confirmed: number };
+}
+
+// --- Workflows + analytics (M5) calls -----------------------------------------
+
+export function listWorkflows(): Promise<Workflow[]> {
+  return request<Workflow[]>("/admin/workflows");
+}
+
+export function getWorkflow(id: number): Promise<Workflow> {
+  return request<Workflow>(`/admin/workflows/${id}`);
+}
+
+export function createWorkflow(payload: WorkflowPayload): Promise<Workflow> {
+  return request<Workflow>("/admin/workflows", {
+    method: "POST",
+    body: JSON.stringify({ trigger: "ticket.created", ...payload }),
+  });
+}
+
+/** PATCH — only include fields to change; never send an empty object. */
+export function updateWorkflow(
+  id: number,
+  payload: Partial<WorkflowPayload>,
+): Promise<Workflow> {
+  return request<Workflow>(`/admin/workflows/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteWorkflow(id: number): Promise<void> {
+  return request<void>(`/admin/workflows/${id}`, { method: "DELETE" });
+}
+
+export function listWorkflowRuns(id: number): Promise<WorkflowRun[]> {
+  return request<WorkflowRun[]>(`/admin/workflows/${id}/runs`);
+}
+
+export function getAdminAnalytics(days: number): Promise<AdminAnalytics> {
+  return request<AdminAnalytics>(
+    `/admin/analytics?days=${encodeURIComponent(days)}`,
+  );
 }

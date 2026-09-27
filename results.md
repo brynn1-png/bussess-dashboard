@@ -6,6 +6,7 @@
 - M2 (TASK-003) **verified** 2026-09-28: pytest 31/31, lint+build clean, live ticket e2e 16/16, user walkthrough confirmed → Completed.
 - M3 (TASK-004) **verified** 2026-09-28: pytest 36/36, lint+build clean, live analysis e2e 11/11 on Supabase → Completed (committed `1c66b85`).
 - M4 (TASK-005) **verified & completed** 2026-09-28: pytest 47/47, lint+build clean, detector `[]`, live admin e2e 36/36 on Supabase, user walkthrough confirmed → Completed (committed `46d182e`).
+- M5 (TASK-006) **verified** 2026-09-28: pytest 59/59, lint+build clean, detector `[]`, migration `c633bb4d64f4` on Supabase, live workflow e2e 34/34 → pending user walkthrough + commit.
 - Full details in the Result Log below.
 
 ---
@@ -13,6 +14,17 @@
 ## Result Log
 
 <!-- Format: date, outcome, verification performed, effects -->
+
+### 2026-09-28 — M5 Workflows + Analytics (TASK-006)
+
+- **Outcome:** Capped workflow engine shipped (PLAN §5): `ticket.created` trigger → AND conditions (status/priority/category/sentiment) → 4 actions, evaluated as a second post-analysis background step with its own session. Each evaluation records exactly one `workflow_runs` row (`success`/`skipped`/`failed`); workflows are isolated by DB savepoints, so a failing workflow rolls back its partial actions and never corrupts other workflows or the request. New `tickets.tags` column (migration `c633bb4d64f4`) backs the `add_tag` action; `set_priority` overrides the AI suggestion; `record_notification` writes run details + a system message (no real delivery — cap). Config CRUD + run history on `/api/admin/workflows` (all `require_admin`), windowed aggregates on `GET /api/admin/analytics?days=1..90` (SQL GROUP BY, UTC day zero-fill — frontend never aggregates). Frontend: `/admin/workflows` list + row-editor form (conditions/actions with per-type controls, run history, two-step delete), `/admin/analytics` (7/30/90 windows, KPIs, status/category bars, daily chart), AdminLayout tabs, tag chips on admin ticket detail.
+- **Verification performed:**
+  - `pytest` → **59/59 passed** (12 new: authz matrix over all 7 new routes, 11 cap-violation payloads → 422, engine chain/mismatch/rollback/human-confirmed/dedupe, runs cascade, analytics aggregates + bounds)
+  - `npm run lint` clean; `npm run build` (tsc + vite) passes; `impeccable detect` over all changed UI files → `[]`
+  - `alembic upgrade head` → `c633bb4d64f4` applied on Supabase, `alembic current` = head
+  - Live vs Supabase through running uvicorn → **34/34**: authz spot checks, 2 workflows + invalid-trigger 422, ticket chain (escalate run `success` with priority `urgent` + tag `e2e` + rendered system message; skip run `skipped` with category mismatch detail), list `run_counts`, analytics deltas all +1, PATCH/DELETE/404 semantics — all temp rows deleted afterwards (only the user's account remains)
+- **Effects:** Automation + analytics milestone complete; M6 (integrations/hardening) can build on the run history and `/api/admin/*` surface.
+- **Risks/notes:** `tests/conftest.py` safety fix applied (DATABASE_URL now forced to `sqlite://` — closes the 2026-09-27 data-loss finding); orphaned uvicorn workers from prior sessions served stale code from `:8000` and were killed (Windows spawn children outlive a killed reloader parent) — one clean instance now runs; UI walkthrough not run here (no desktop browser) — user's manual step; analytics days bucket in UTC (local "today" can differ near midnight).
 
 ### 2026-09-28 — M4 Admin Dashboard (TASK-005)
 

@@ -8,6 +8,7 @@ from app.api.admin import router as admin_router
 from app.api.auth import router as auth_router
 from app.api.routes import router as api_router
 from app.api.tickets import router as tickets_router
+from app.api.workflows import router as workflows_router
 from app.core.config import ConfigurationError, settings
 
 
@@ -25,6 +26,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(tickets_router)
     app.include_router(admin_router)
+    app.include_router(workflows_router)
     return app
 
 

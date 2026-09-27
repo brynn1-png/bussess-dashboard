@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
@@ -28,6 +28,8 @@ class Ticket(Base):
     priority: Mapped[TicketPriority | None] = mapped_column(
         Enum(TicketPriority, name="ticket_priority")
     )
+    # Workflow "add tag" target (M5); NULL on pre-migration rows, read as [].
+    tags: Mapped[list | None] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

@@ -14,6 +14,7 @@ from app.schemas.ticket import (
     TicketResponse,
 )
 from app.services import analysis_service, ticket_service
+from app.workflows.engine import evaluate_ticket_workflows
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
 
@@ -44,6 +45,9 @@ def create_ticket(
     # Separate step after creation (PLAN M3): AI runs post-response and can
     # never fail or slow down ticket creation.
     background_tasks.add_task(analysis_service.analyze_ticket, ticket.id)
+    # Second step after analysis (PLAN M5): workflow evaluation sees the
+    # analyzed ticket and can never fail ticket creation either.
+    background_tasks.add_task(evaluate_ticket_workflows, ticket.id)
     return TicketDetailResponse.model_validate(ticket)
 
 

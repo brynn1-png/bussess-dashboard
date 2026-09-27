@@ -169,6 +169,7 @@ def ticket_detail(db: Session, ticket_id: int) -> dict[str, Any]:
         "status": ticket.status,
         "category": ticket.category,
         "priority": ticket.priority,
+        "tags": ticket.tags or [],
         "created_at": ticket.created_at,
         "updated_at": ticket.updated_at,
         "customer": {
