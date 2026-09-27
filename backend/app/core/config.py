@@ -21,5 +21,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
 
+    # AI (decision D2: mock-first; real provider chosen before M4/M6 exit)
+    ai_provider: str = "mock"
+
 
 settings = Settings()

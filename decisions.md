@@ -64,3 +64,11 @@
 - **Decision:** Portal UI extends the existing M0 identity (slate background, ink text, emerald accent, Tailwind) instead of introducing a new palette/typography; HomePage stays as an entry point with login/register/portal links.
 - **Reasoning:** User choice via design-skill probe; `.ai/architecture.md` §10 (portfolio polish) and an established visual world should be inherited rather than replaced (impeccable: "a section inherits its surface").
 - **Alternatives considered:** strict scaffold-level styling (too plain for portfolio); bolder new identity (unnecessary divergence mid-product).
+
+### 2026-09-28 — M3: analysis status lives on `ai_analysis`, trigger via BackgroundTasks, mock only
+
+- **Decision (status):** Per-ticket analysis status is read from the existing 1:1 `ai_analysis.status` (`pending | completed | failed`) instead of adding the `tickets.analysis_status` column PLAN M3 wording implies — **no migration**; one source of truth.
+- **Decision (trigger):** Analysis runs in a FastAPI `BackgroundTasks` step after the response, with its own DB session — creation is never slowed or failed by AI (PLAN M3 hard requirement); no Redis/Celery (architecture Decision 5).
+- **Decision (provider):** Real provider selection **deferred** — user chose "mock only" at TASK-004 approval; select and implement before M4/M6 exit (PLAN M3 decision point, resolved as D2 mock-first as written).
+- **Reasoning:** The 1:1 row already provides identical observable behavior; in-process background tasks are the smallest mechanism that separates AI from creation; mock keeps milestones moving at zero cost.
+- **Alternatives considered:** `tickets.analysis_status` column (redundant + sync risk); synchronous analysis inside the request (blocks response with a real provider later); Celery/Redis (out of scope per architecture); real provider now (deferred — key/cost decision).

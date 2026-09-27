@@ -2,11 +2,11 @@
 
 ## Current State Summary
 
-- **M0 COMPLETE** (commit `95fdc1d`); **M1 COMPLETE** (code commit `9253b4c`; migration `7d4a1330581a` applied to Supabase 2026-09-28; TASK-002 Completed).
-- **M2 (TASK-003) implemented, status Verification:** ticket API (create/list/detail/messages, 404 isolation) + customer portal UI (login/register/portal list/new/detail). Verified: pytest 31/31 · lint+build clean · design detector clean · live e2e on Supabase 16/16 · walkthrough data cleaned up.
-- Supabase reachable via **session pooler** (`aws-0-ap-southeast-1.pooler.supabase.com:5432`, username `postgres.<project-ref>`) — direct `db.` host is IPv6-only and unusable on this network (see `decisions.md`).
-- ⏳ Pending: (1) **user manual UI walkthrough** (two accounts, acceptance criterion), (2) user commit — M1 close-out files + all M2 work (user commits themselves), (3) optional: `git commit --amend` to fix `9253b4c`'s "commit" message (local, unpushed).
-- Next actions: walkthrough → TASK-003 Completed → M3 (AI analysis) spec; before M6 apply test-DB safety fix (force `DATABASE_URL=sqlite://` in `tests/conftest.py`).
+- **M0 COMPLETE** (`95fdc1d`); **M1 COMPLETE** (`9253b4c` + migration `7d4a1330581a` on Supabase, TASK-002 Completed); **M2 COMPLETE** (TASK-003 Completed — user walkthrough confirmed; committed by user through `a0ce746`).
+- **M3 (TASK-004) implemented, status Completed pending commit:** AI analysis pipeline — `backend/app/ai/` (protocol + Pydantic validation + deterministic MockProvider), background trigger after ticket creation, failure isolation (never raises), ticket category/priority write-back, `urgent` badge. Verified: pytest **36/36** · lint+build clean · detector clean · live vs Supabase **11/11** · walkthrough data cleaned.
+- Supabase reachable via **session pooler** (`aws-0-ap-southeast-1.pooler.supabase.com:5432`, username `postgres.<project-ref>`) — direct `db.` host is IPv6-only (see `decisions.md`).
+- ⏳ Pending: (1) user commits M3 files, (2) optional: rename local messages "commit"/"comit" (all still unpushed), (3) before M6: test-DB safety fix (force `DATABASE_URL=sqlite://` in `tests/conftest.py`).
+- Next actions: commit → create `TASK-005` for **M4 (Admin Dashboard)** — overview counts, all-tickets management, AI review UI (`is_human_confirmed`), customers list.
 
 ---
 
@@ -56,3 +56,12 @@
 - **Frontend:** `services/api.ts` (Bearer header, typed `ApiError`, auth + ticket calls), `features/auth` (AuthProvider/useAuth/Protected), pages: Login, Register, portal (PortalLayout, TicketList, NewTicket, TicketDetail), shared `components/ui.tsx`, `lib/format.ts`, HomePage CTAs, `index.css` browser-surface theming (selection/caret/focus).
 - **Verified:** pytest 31/31 · lint + build clean · `impeccable detect` → no findings · live e2e vs Supabase 16/16 (isolation 404s included) · walkthrough test data cleaned from DB (user's own account untouched).
 - Status: TASK-003 **Verification** — pending user manual two-account UI walkthrough + user commit of M2 files. Next: walkthrough → Completed → M3 spec.
+
+### 2026-09-28 (session 4 — M3 AI analysis pipeline, TASK-004)
+
+- User confirmed M2 walkthrough ("yes it is working") → TASK-003 → **Completed**. Created TASK-004 from PLAN §M3; design-skill probe answered: **mock only for now** (real provider deferred to before M4/M6 exit).
+- **Backend:** `app/ai/` package — `base.py` (AIProvider protocol + `get_provider` factory, `UnknownProviderError`), `schemas.py` (`AnalysisResult`, field limits mirroring DB), `mock.py` (deterministic keyword engine: category/sentiment/priority rules, summary + reply templates); `services/analysis_service.py` (own-session background orchestration, pending → completed/failed, sanitized errors, **never raises**); trigger via `BackgroundTasks` in `POST /api/tickets`; `AI_PROVIDER` setting (default `mock`) + `.env.example` entry.
+- **Frontend:** `urgent` priority type + solid-red badge (contrast 4.83:1).
+- **Tests (5):** happy path + write-back + `is_human_confirmed=False`; deterministic mock; provider crash → ticket intact/failed; malformed output → validation failed/no partial write; unknown config → failed. En route fix: helper returned token object instead of `access_token` → 401s (fixed).
+- **Verified:** pytest **36/36** · lint+build clean · `impeccable detect` → `[]` · live vs Supabase **11/11** (billing/negative/urgent analysis, write-back, cleanup) — uvicorn restarted in background by assistant after user's terminal closed (port 8000).
+- Status: TASK-004 **Completed** pending user commit. Next: commit → TASK-005 (M4 Admin Dashboard) spec.

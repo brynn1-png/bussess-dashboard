@@ -3,7 +3,8 @@
 ## Current State Summary
 
 - M0 verified (`95fdc1d`); M1 **fully verified** (`9253b4c`): pytest 21/21 + Alembic migration on Supabase + live end-to-end auth on real PostgreSQL (session 2, 2026-09-28).
-- M2 (TASK-003) **implemented + verified** 2026-09-28 (session 3): pytest 31/31, lint+build clean, live ticket e2e on Supabase 16/16; manual UI walkthrough pending user.
+- M2 (TASK-003) **verified** 2026-09-28: pytest 31/31, lint+build clean, live ticket e2e 16/16, user walkthrough confirmed → Completed.
+- M3 (TASK-004) **verified** 2026-09-28: pytest 36/36, lint+build clean, live analysis e2e 11/11 on Supabase → Completed (pending commit).
 - Full details in the Result Log below.
 
 ---
@@ -11,6 +12,16 @@
 ## Result Log
 
 <!-- Format: date, outcome, verification performed, effects -->
+
+### 2026-09-28 — M3 AI Analysis Pipeline (TASK-004)
+
+- **Outcome:** Ticket creation now automatically triggers AI analysis as a post-response background task. Provider abstraction (`AIProvider` protocol) + deterministic `MockProvider` (keyword rules → category, sentiment, priority, summary, suggested response); Pydantic validation gate before persistence; failures persisted as `failed` with sanitized error — the service never raises into a request. Completed analysis writes category/priority back onto the ticket. Real provider deferred (user decision: mock only).
+- **Verification performed:**
+  - `pytest` → **36/36 passed** (5 new: happy path + write-back + `is_human_confirmed=False`; deterministic mock; provider crash → ticket intact + `failed`; malformed output → validation rejected + no partial persistence; unknown `AI_PROVIDER` → `failed`, creation unaffected)
+  - `npm run lint` clean; `npm run build` (tsc + vite) passes; `impeccable detect` on changed frontend files → no findings
+  - Live vs Supabase through running uvicorn → **11/11**: register → create 201 → analysis row `completed` (provider=mock, billing/negative/urgent, fields populated, no error) → ticket write-back verified → `is_human_confirmed` false → walkthrough data deleted
+- **Effects:** M4 (admin dashboard) now has AI results to review/confirm; `tickets.category`/`priority` populated for sorting/filtering.
+- **Risks/notes:** failure paths verified in pytest only (no live provider switch exists by design); analysis is in-process/synchronous-on-the-side (architecture Decision 5 — background infra deferred); mock is rules-based, recorded as `provider="mock"` per row.
 
 ### 2026-09-28 — M2 Ticket Submission + Customer Portal (TASK-003)
 

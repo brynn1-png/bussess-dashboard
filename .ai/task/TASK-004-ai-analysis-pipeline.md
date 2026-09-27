@@ -1,6 +1,6 @@
 # TASK-004: AI Analysis Pipeline (M3)
 
-**Status:** Created — awaiting user approval
+**Status:** Completed (2026-09-28) — all acceptance criteria verified (pytest 36/36, live 11/11); commit pending user
 
 **Created:** 2026-09-28
 
@@ -55,15 +55,15 @@ Tickets currently sit unprocessed: an admin would have to read every one and dec
 
 ## 4. Acceptance Criteria
 
-- [ ] Pytest: submitting a ticket triggers analysis automatically → `ai_analysis` row exists for **that** ticket, status `completed`, all fields populated, `provider = "mock"`, ticket `category`/`priority` written back
-- [ ] Pytest: mock output is deterministic (same input → same analysis)
-- [ ] Pytest: **provider failure** (inject raising provider) → ticket + opening message still exist, analysis status `failed`, `error_message` recorded, `POST /api/tickets` still 201
-- [ ] Pytest: **malformed AI output** (provider returns invalid enum/overlong category) → validation rejects → status `failed`, nothing partial persisted
-- [ ] Pytest: unknown `AI_PROVIDER` value → status `failed` with clear message (no crash)
-- [ ] Pytest: existing suite still green (31/31 + new)
-- [ ] `npm run lint` + `npm run build` pass (badge change)
-- [ ] Live check: submit a ticket via API against Supabase → analysis row `completed` with mock output; cleanup
-- [ ] No secrets committed; AI keys (when introduced) live only in `.env`
+- [x] Pytest: submitting a ticket triggers analysis automatically → `ai_analysis` row exists for **that** ticket, status `completed`, all fields populated, `provider = "mock"`, ticket `category`/`priority` written back
+- [x] Pytest: mock output is deterministic (same input → same analysis)
+- [x] Pytest: **provider failure** (inject raising provider) → ticket + opening message still exist, analysis status `failed`, `error_message` recorded, `POST /api/tickets` still 201
+- [x] Pytest: **malformed AI output** (provider returns invalid enum/overlong category) → validation rejects → status `failed`, nothing partial persisted
+- [x] Pytest: unknown `AI_PROVIDER` value → status `failed` with clear message (no crash)
+- [x] Pytest: existing suite still green (31/31 + new → **36/36**)
+- [x] `npm run lint` + `npm run build` pass (badge change)
+- [x] Live check: submit a ticket via API against Supabase → analysis row `completed` with mock output; cleanup — **11/11**
+- [x] No secrets committed; AI keys (when introduced) live only in `.env`
 
 ---
 
@@ -136,10 +136,10 @@ backend/app/core/config.py                    # ai_provider: str = "mock"
 - **Real-provider scope creep** — key handling, retries, cost: deliberately deferred unless approved at this milestone.
 
 ## 10. Verification
-- [ ] `pytest` — new analysis tests + full suite green
-- [ ] `npm run lint` + `npm run build`
-- [ ] Live: one real ticket against Supabase → analysis `completed` (mock) → cleanup
-- [ ] Changed files reviewed; no secrets tracked
+- [x] `pytest` — new analysis tests + full suite green (36/36)
+- [x] `npm run lint` + `npm run build`
+- [x] Live: one real ticket against Supabase → analysis `completed` (mock) → cleanup
+- [x] Changed files reviewed; no secrets tracked
 
 ## 11. Notes / Decision Points
 
@@ -147,3 +147,14 @@ backend/app/core/config.py                    # ai_provider: str = "mock"
 2. **Real provider decision (PLAN: "select before M3 exit") — RESOLVED 2026-09-28:**
    - **User choice: (a) Mock only** — ship M3 with the deterministic mock; the real provider (OpenAI/Anthropic/other) is chosen before M4/M6 exit, when the user is ready for key + cost setup.
    - Implementation follows D2's mock-first strategy exactly; `provider` column records `"mock"` per row so real AI can be told apart later.
+
+---
+
+## 12. Verification Record (2026-09-28)
+
+- **Backend:** `pytest` → **36/36 passed** — 5 new tests: happy path (completed + provider=mock + billing/negative/high + `is_human_confirmed=False` + ticket write-back), deterministic mock (delivery/neutral/low + urgent case), provider crash (201 + ticket/messages intact + `failed` + no partial write-back), malformed output (validation → `failed`, all fields None), unknown config (`UnknownProviderError` recorded, creation unaffected).
+- **Frontend:** `npm run lint` clean; `npm run build` (tsc + vite) passes; `impeccable detect` on changed files → no findings. Contrast spot-check: white on `red-600` badge = 4.83:1 (≥4.5 ✓).
+- **Live e2e vs Supabase through running uvicorn (11/11):** health 200 · register 201 · create 201 · analysis row exists → `completed` · provider `mock` · fields populated (billing/negative/urgent) · `is_human_confirmed` false · no error_message · ticket write-back verified · walkthrough data cleaned.
+- **En route fix:** test helper returned the whole token object instead of `access_token` string → 401s; corrected helper (4 tests green).
+- **Scope note:** failure paths verified in pytest only — no server-side provider switch exists to trigger them live (by design, no new endpoint in M3).
+- **Pending:** user commit of M3 files.

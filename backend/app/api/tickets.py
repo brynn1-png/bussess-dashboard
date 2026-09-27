@@ -1,6 +1,6 @@
 """Customer ticket endpoints. Routes stay thin: validate → service → map errors."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -13,7 +13,7 @@ from app.schemas.ticket import (
     TicketDetailResponse,
     TicketResponse,
 )
-from app.services import ticket_service
+from app.services import analysis_service, ticket_service
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
 
@@ -33,6 +33,7 @@ def _map_service_error(exc: Exception) -> HTTPException:
 @router.post("", response_model=TicketDetailResponse, status_code=status.HTTP_201_CREATED)
 def create_ticket(
     payload: CreateTicketRequest,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> TicketDetailResponse:
@@ -40,6 +41,9 @@ def create_ticket(
         ticket = ticket_service.create_ticket(db, user, payload.subject, payload.message)
     except ticket_service.NotCustomerError as exc:
         raise _map_service_error(exc)
+    # Separate step after creation (PLAN M3): AI runs post-response and can
+    # never fail or slow down ticket creation.
+    background_tasks.add_task(analysis_service.analyze_ticket, ticket.id)
     return TicketDetailResponse.model_validate(ticket)
 
 
