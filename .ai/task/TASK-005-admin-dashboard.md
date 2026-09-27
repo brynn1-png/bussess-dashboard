@@ -1,6 +1,6 @@
 # TASK-005: Admin Dashboard (M4)
 
-**Status:** Verification — implemented; pending user manual walkthrough + commit
+**Status:** Completed — walkthrough confirmed 2026-09-28; committed as `46d182e`
 
 **Created:** 2026-09-28
 
@@ -64,7 +64,7 @@ Tickets and AI analyses are being produced but only the *customer* side can see 
 - [x] Pytest: customers list includes correct `ticket_count`
 - [x] Existing suite still green (36/36 + new → 47/47)
 - [x] `npm run lint` + `npm run build` pass
-- [ ] Manual UI walkthrough (user, admin account via `python -m app.cli.create_admin`): overview numbers match reality → open a ticket → change status → edit + confirm AI response (badge flips) → customer account still can't reach `/admin`
+- [x] Manual UI walkthrough (user, admin account via `python -m app.cli.create_admin`): overview numbers match reality → open a ticket → change status → edit + confirm AI response (badge flips) → customer account still can't reach `/admin` — **confirmed by user 2026-09-28**
 - [x] No secrets committed
 
 ---
@@ -137,7 +137,7 @@ Frontend
 ## 10. Verification
 - [x] `pytest` — authz matrix + new tests + full suite green (47/47)
 - [x] `npm run lint` + `npm run build`
-- [ ] Manual admin walkthrough (user) incl. customer-blocked check
+- [x] Manual admin walkthrough (user) incl. customer-blocked check — confirmed 2026-09-28
 - [x] Changed files reviewed; no secrets tracked
 
 ## 11. Notes
@@ -155,5 +155,5 @@ Frontend
 - **Frontend:** `npm run lint` clean; `npm run build` (tsc + vite) passes; `impeccable detect` over admin pages + App/Protected/Login/Register → `[]`.
 - **Live e2e vs Supabase through running uvicorn (36/36):** admin login 200 · temp customer 201 + 2 tickets · **anon 401 / customer 403** spot checks (list + PATCH) · overview aggregates (totals/statuses/avg key/customers/recent + AI `completed ≥ 2`) · list + `?status=open` + bogus → 422 · detail (customer, 1 message, analysis `completed`, unknown → 404) · PATCH persist (in_progress/urgent/smoke-cat) + bogus → 422 + empty → 422 + unknown → 404 · analysis PATCH edit+confirm persisted with `provider` provenance + unknown → 404 · customers list `ticket_count=2`. **All temp rows deleted afterwards.**
 - **En route fixes:** stray placeholder route removed from `admin.py`; deprecated `HTTP_422_UNPROCESSABLE_ENTITY` → `HTTP_422_UNPROCESSABLE_CONTENT`; stale post-login `navigate()` (role bug) → context-driven `<Navigate>`; react-hooks v7 lint findings resolved (no sync `setState` in effects — portal pattern; no refs read during render — inline flash effects); an orphaned pre-M4 uvicorn worker kept serving the old app from `:8000` after restart → killed, admin routes confirmed in live OpenAPI.
-- **Not run here:** browser UI walkthrough — no desktop browser connected to this session (falls to the user step in §4/§10).
-- **Pending:** user manual walkthrough + user commit of M4 files.
+- **Not run here:** browser UI walkthrough — no desktop browser connected to this session (fell to the user step in §4/§10, **confirmed working 2026-09-28**).
+- **Closed:** user manual walkthrough confirmed; M4 committed as `46d182e`.
