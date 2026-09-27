@@ -2,8 +2,8 @@
 
 ## Current State Summary
 
-- No project decisions recorded yet in this file.
-- Initial architecture decisions (Python + FastAPI, React, PostgreSQL, AI as backend service) are documented in `.ai/architecture.md` §12.
+- Key confirmed decisions: customer accounts with login (D1), mock-first AI provider (D2), Supabase-hosted PostgreSQL (D6), SQLite for tests only, `PLAN.md` approved with D3–D7.
+- Full architecture decisions live in `.ai/architecture.md` §12; roadmap in `PLAN.md`.
 
 ---
 
@@ -27,3 +27,19 @@
 
 - **Decision:** Project roadmap defined in `PLAN.md` (milestones M0–M6, workflow-engine scope cap, testing strategy).
 - **Status:** Draft — awaiting user approval, including proposed decisions D3–D7 (ORM, auth mechanism, frontend tooling, dev database, notifications).
+
+### 2026-09-27 — Plan approved; D3–D7 accepted
+
+- **Decision:** User approved `PLAN.md` as written ("proceed"); D3 (SQLAlchemy + Alembic), D4 (JWT + bcrypt), D5 (Vite/React/TS/Tailwind/Router), D6, D7 accepted.
+
+### 2026-09-27 — Test database: SQLite in-memory (test-only)
+
+- **Decision:** Backend tests run against in-memory SQLite; the application's persistent store remains PostgreSQL (Supabase) per architecture.
+- **Reasoning:** Supabase credentials deferred by user; SQLite lets M1 auth/model tests run now. Models use portable column types (JSON, not JSONB) to avoid PG-only features.
+- **Mitigation:** The real Alembic migration on Supabase remains a required verification step before M1 is marked Completed.
+
+### 2026-09-27 — D6 revised: Supabase instead of local PostgreSQL
+
+- **Decision:** PostgreSQL will be hosted on **Supabase**; connection string via backend-only `.env`.
+- **Reasoning:** User decision — no local PostgreSQL or Docker installed on the machine; Supabase provides hosted PostgreSQL.
+- **Note:** Alembic migrations must use the direct/session connection (port 5432), never the transaction pooler (6543), which rejects DDL. Documented in `backend/.env.example` and `README.md`.

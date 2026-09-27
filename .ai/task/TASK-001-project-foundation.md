@@ -1,8 +1,10 @@
 # TASK-001: Project Foundation (M0)
 
-**Status:** Approved
+**Status:** Completed
 
 **Created:** 2026-09-27
+
+**Completed:** 2026-09-27
 
 ---
 
@@ -31,13 +33,13 @@ No implementation code exists. Every later milestone depends on a working, teste
 
 ## 4. Acceptance Criteria
 
-- [ ] `pytest` passes (health endpoint test)
-- [ ] `npm run build` succeeds
-- [ ] `npm run lint` passes
-- [ ] Backend runs; `GET /api/health` returns HTTP 200
-- [ ] Frontend dev server proxies `/api/health` to backend
-- [ ] No secrets or build artifacts tracked by git
-- [ ] DB connectivity to Supabase verified once `.env` is populated (or explicitly deferred)
+- [x] `pytest` passes (health endpoint test — 1 passed)
+- [x] `npm run build` succeeds
+- [x] `npm run lint` passes
+- [x] Backend runs; `GET /api/health` returns HTTP 200 (direct + `/docs` 200)
+- [x] Frontend dev server proxies `/api/health` to backend (200 via :5173)
+- [x] No secrets or build artifacts tracked by git (verified staged file list)
+- [ ] DB connectivity to Supabase verified once `.env` is populated — **deferred: user has not yet created `backend/.env`**
 
 ---
 
