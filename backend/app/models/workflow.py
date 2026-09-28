@@ -1,8 +1,8 @@
-"""Workflow and workflow run models (engine itself arrives in M5)."""
+"""Workflow and workflow run models (execution engine: app/workflows, M5)."""
 
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
@@ -15,6 +15,10 @@ class Workflow(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # M6 demo-data flag: seed/removal commands act ONLY on True rows.
+    is_demo: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("false"), nullable=False
+    )
     trigger: Mapped[str] = mapped_column(String(50))  # e.g. "ticket.created"
     conditions: Mapped[list | dict | None] = mapped_column(JSON)
     actions: Mapped[list | dict | None] = mapped_column(JSON)

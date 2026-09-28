@@ -6,7 +6,8 @@
 - M2 (TASK-003) **verified** 2026-09-28: pytest 31/31, lint+build clean, live ticket e2e 16/16, user walkthrough confirmed → Completed.
 - M3 (TASK-004) **verified** 2026-09-28: pytest 36/36, lint+build clean, live analysis e2e 11/11 on Supabase → Completed (committed `1c66b85`).
 - M4 (TASK-005) **verified & completed** 2026-09-28: pytest 47/47, lint+build clean, detector `[]`, live admin e2e 36/36 on Supabase, user walkthrough confirmed → Completed (committed `46d182e`).
-- M5 (TASK-006) **verified** 2026-09-28: pytest 59/59, lint+build clean, detector `[]`, migration `c633bb4d64f4` on Supabase, live workflow e2e 34/34 → pending user walkthrough + commit.
+- M5 (TASK-006) **verified & completed** 2026-09-28: pytest 59/59, lint+build clean, detector `[]`, migration `c633bb4d64f4` on Supabase, live workflow e2e 34/34, user walkthrough confirmed → Completed (committed `3570f8d`, pushed).
+- M6 (TASK-007) **implemented & automated-verified** 2026-09-28: pytest 72/72 + 1 skip (live Ollama), lint+build clean, detector `[]`, migration `4a2a875fb9dc` on Supabase, live seed→remove real-data-survival check, README + architecture sync — **follow-up: Ollama cloud endpoint adopted (`https://ollama.com`, `gpt-oss:20b`), live test now runs (73 passed, 0 skipped), live e2e with the real cloud model PASSED**; pending user e2e walkthrough + screenshots.
 - Full details in the Result Log below.
 
 ---
@@ -14,6 +15,28 @@
 ## Result Log
 
 <!-- Format: date, outcome, verification performed, effects -->
+
+### 2026-09-28 — M6 follow-up: Ollama cloud live provider (session 8)
+
+- **Outcome:** Real AI analysis now runs against **Ollama cloud** instead of a local install (user decision). No production-code change was required — `OllamaProvider` already appends `/api/chat` to `OLLAMA_BASE_URL` and sends `Authorization: Bearer` when `OLLAMA_API_KEY` is set, so cloud is config-only: `OLLAMA_BASE_URL=https://ollama.com`, `OLLAMA_MODEL=gpt-oss:20b`, key in `backend/.env`, `AI_PROVIDER=ollama`. Model chosen by live probe of the user's key (`GET /api/tags` → 17 models; chat-probed 4 with the production prompt): `gpt-oss:20b` returned pure JSON with valid enums; `gemma4:31b` wrapped JSON in markdown fences (would fail the Pydantic gate → rejected); `nemotron-3-*` worked but cost more. Supporting changes: live-test readiness probe now sends the same auth header (it could never detect a cloud endpoint before), `tests/conftest.py` forces `AI_PROVIDER=mock` (a real regression — see below), docs synced (`.env.example`, `README.md`, `.ai/architecture.md`, `PLAN.md` D2, `config.py` comments), `decisions.md` follow-up entry.
+- **Verification performed:**
+  - `pytest` → **73 passed, 0 skipped** (live Ollama test now executes against the cloud instead of skipping)
+  - **Live e2e vs Supabase with `AI_PROVIDER=ollama`: PASS** — health 200 → register 201 → ticket 201 → analysis `COMPLETED` / `provider=ollama` / `billing` / `HIGH` / `NEGATIVE` with non-empty summary + suggested response and `error_message=null`; ticket write-back confirmed (`category`/`priority` on the ticket row); all e2e rows deleted afterwards (DB back to 1 user = the user's admin, 1 ticket = theirs, 0 workflows)
+  - **Regression found by re-running the suite:** with `AI_PROVIDER=ollama` in `.env`, tests began calling the real model — `test_submission_runs_mock_analysis_and_writes_back` failed and the suite went 22s → 235s. Fixed in `tests/conftest.py` by forcing `AI_PROVIDER=mock` unconditionally (same pattern as the existing `DATABASE_URL` force) → **73 passed in 21s**
+- **Effects:** M6's last technical exit criterion (live real-provider check) is satisfied; only the user walkthrough, screenshots, and M6 commit remain.
+- **Risks/notes:** Ollama **free plan** = a monthly starter allowance for starter models (1 concurrent request), not unlimited — larger models are pay-as-you-go; the API key briefly appeared in a shell output in this session (transcript-local only, `.env` is gitignored) → **user advised to rotate it**; zombie uvicorn worker holding port 8000 was killed during the switch; test suite stays offline/deterministic by construction now.
+
+### 2026-09-28 — M6 Demo Data + Polish + Handoff (TASK-007)
+
+- **Outcome:** Removable demo dataset (`is_demo` columns on `users`/`workflows`, migration `4a2a875fb9dc`): `python -m app.cli.seed_demo` creates a fictional business — 1 admin + 4 customers + 12 tickets spanning every category/priority/sentiment/status across 9 UTC days (populated analytics charts), analyses through the real pipeline (provider forced to `mock` for determinism), and 3 workflows producing 27 runs across `success`/`skipped`/`failed`; double-seed refused, `--remove` deletes only `is_demo` roots in one command. Real AI provider resolved (PLAN D2): `OllamaProvider` behind the existing `AIProvider` interface (`POST /api/chat` JSON mode, `OLLAMA_*` env config, optional bearer for hosted endpoints) — `mock` remains the default; failures raise `OllamaError` → analysis `failed`. UX polish audit found one issue (admin 5-tab nav overflow on narrow screens → `flex-wrap`). Handoff docs: portfolio README (features, Mermaid architecture, Ollama/seed setup, screenshot placeholders) and `.ai/architecture.md` synced per §17 (actual routes incl. `/api/admin/*` reconciliation, resolved stack, real data model, JWT/roles, Decisions 6-7, current tech debt), PLAN D2 marked Resolved.
+- **Verification performed:**
+  - `pytest` → **72 passed, 1 skipped** (13 new: seed coverage matrix/duplicate refusal/real-data survival/CLI exit codes; Ollama factory/JSON-gate/auth-header/bad-output/HTTP/connect failures; live-Ollama test skips when not running)
+  - `npm run lint` clean; `npm run build` passes; `impeccable detect` → `[]`
+  - `alembic upgrade head` → `4a2a875fb9dc` applied on Supabase, `alembic current` = head
+  - Live Supabase: seed → output counts (5 users / 12 tickets / 12 analyses / 3 workflows / 27 runs) → `--remove` → non-demo counts identical to before (1 user / 1 ticket / 0 workflows)
+  - `git status` reviewed: no `.env`, no secrets among the 11 modified + 7 new files
+- **Effects:** Final milestone's build/seed/docs deliverables complete; project is walkthrough → commit away from handoff-ready.
+- **Risks/notes:** ~~Ollama is not installed on the user's machine~~ **superseded 2026-09-28: Ollama cloud adopted** (`https://ollama.com` + `gpt-oss:20b`, free-plan starter allowance; 1 concurrent request / monthly allowance on the free plan); README screenshots are placeholders pending user capture (no browser tooling); the seed's forced `mock` provider means demo analyses are keyword-derived, not model-derived (by design, restored afterwards); a real (non-demo) active workflow in the user's DB will also evaluate seeded demo tickets — runs recorded under the real workflow survive `--remove` by design.
 
 ### 2026-09-28 — M5 Workflows + Analytics (TASK-006)
 

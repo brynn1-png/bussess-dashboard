@@ -10,6 +10,11 @@ import os
 # wipe it. A pre-set DATABASE_URL (e.g. from backend/.env or the shell) must
 # not win here the way `setdefault` allowed.
 os.environ["DATABASE_URL"] = "sqlite://"
+# UNCONDITIONAL (determinism): tests must use the offline mock provider even if
+# backend/.env sets AI_PROVIDER=ollama — otherwise the suite calls a real model
+# (slow, costs money, non-deterministic). The live Ollama test builds its own
+# provider and is unaffected.
+os.environ["AI_PROVIDER"] = "mock"
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-not-for-production")
 os.environ.setdefault("DEBUG", "false")
 

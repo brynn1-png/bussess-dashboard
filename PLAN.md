@@ -14,7 +14,7 @@ It does not replace the harness files; per-task specs live in `.ai/task/`.
 | # | Decision | Choice | Status |
 |---|----------|--------|--------|
 | D1 | Customer identity | Customer accounts with signup/login; tickets belong to an authenticated customer | ✅ Confirmed by user |
-| D2 | AI provider strategy | Mock-first: build `backend/app/ai/` behind a provider abstraction with a deterministic mock; choose real provider before M3 exit | ✅ Confirmed by user |
+| D2 | AI provider strategy | Mock-first provider abstraction (`backend/app/ai/`); real provider resolved 2026-09-28 as **Ollama** (`ollama` provider behind the same interface, `OLLAMA_*` env config; **Ollama cloud endpoint selected 2026-09-28 — model `gpt-oss:20b`, free-tier starter allowance**, local install remains a config-only alternative); `mock` remains the default for tests/demos | ✅ Resolved 2026-09-28 |
 | D3 | ORM / migrations | SQLAlchemy + Alembic | ⏳ Proposed — confirm before M0 |
 | D4 | Auth mechanism | JWT (short-lived access token), bcrypt password hashing via `passlib`; token stored in HTTP-only cookie if same-origin, else `Authorization: Bearer` | ⏳ Proposed — confirm before M1 |
 | D5 | Frontend tooling | Vite + React + TypeScript + Tailwind CSS + React Router | ⏳ Proposed — confirm before M0 |
@@ -97,7 +97,7 @@ Each milestone is complete only when its verification passes. Milestones are ord
 - Analysis runs as a **separate step after ticket creation** — AI failure never fails or blocks ticket creation; ticket stores `analysis_status: pending | completed | failed`
 - Structured output validation (Pydantic) before persistence; invalid output → `failed`, never silently stored
 - Analysis fields: category, priority, sentiment, summary, suggested response (flagged AI-generated, not human-confirmed)
-- **Decision point:** select real provider (OpenAI / Anthropic / other), implement `RealProvider` behind same interface, key via env var only
+- **Decision point:** select real provider (OpenAI / Anthropic / other), implement `RealProvider` behind same interface, key via env var only — *resolved 2026-09-28: Ollama (see D2); 2026-09-28 follow-up: Ollama cloud, model `gpt-oss:20b`*
 
 **Verification**
 - Pytest: mock analysis attaches to correct ticket
@@ -172,9 +172,9 @@ Anything beyond this list requires a new plan revision.
 | Risk | Mitigation |
 |------|-----------|
 | AI latency / failure blocking ticket creation | Analysis is a separate step (M3); failure → `failed` status, ticket unaffected |
+| Background work slowing responses | Analysis + workflow evaluation run as post-response background tasks (M3/M5); in-process restart risk tracked in architecture §15 |
 | Workflow engine scope creep | Hard cap in §5; changes require plan revision |
 | Auth security mistakes | D4 uses conventional stack; authz tested in M1 and required for every later protected route |
-| Synchronous AI slow under load | Accepted for v1 (architecture Decision 5); revisit only if it actually hurts |
 | Open decision (D3–D7) blocks M0/M1 | Confirm before starting M0 |
 
 ---

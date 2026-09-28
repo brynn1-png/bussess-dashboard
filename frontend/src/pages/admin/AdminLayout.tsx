@@ -42,7 +42,10 @@ export function AdminLayout() {
               </button>
             </div>
           </div>
-          <nav className="flex gap-6" aria-label="Admin sections">
+          <nav
+            className="flex flex-wrap gap-x-6 gap-y-1"
+            aria-label="Admin sections"
+          >
             <NavLink to="/admin" end className={tabClass}>
               Overview
             </NavLink>

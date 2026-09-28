@@ -29,6 +29,11 @@ def get_provider(name: str) -> AIProvider:
         from app.ai.mock import MockProvider
 
         return MockProvider()
+    if name == "ollama":
+        from app.ai.ollama import OllamaProvider
+
+        return OllamaProvider()
     raise UnknownProviderError(
-        f"Unknown AI provider {name!r} — set AI_PROVIDER in .env (available: mock)"
+        f"Unknown AI provider {name!r} — set AI_PROVIDER in .env "
+        "(available: mock, ollama)"
     )

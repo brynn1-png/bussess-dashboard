@@ -1,6 +1,6 @@
 # TASK-006: Workflows + Analytics (M5)
 
-**Status:** Created — awaiting user approval
+**Status:** Completed — walkthrough confirmed 2026-09-28; commit pending
 
 **Created:** 2026-09-28
 
@@ -85,7 +85,7 @@ Visual builder, OR/NOT conditions, other triggers (`status.changed`, `message.cr
 - [ ] Pytest: authz matrix extended — every new route → 401 anonymous / 403 customer; CRUD/analytics validation 422s, unknown id 404
 - [ ] Pytest: analytics aggregates correct against seeded data (status/category/day/ai counts, zero-fill)
 - [ ] `npm run lint` + `npm run build` pass; `impeccable detect` clean on new pages
-- [ ] Manual UI walkthrough (user): create a workflow via the form → new ticket triggers it → run appears as `success` with actions applied → analytics numbers match seeded data
+- [x] Manual UI walkthrough (user): create a workflow via the form → new ticket triggers it → run appears as `success` with actions applied → analytics numbers match seeded data — confirmed 2026-09-28
 - [ ] No secrets committed
 
 ---
@@ -159,7 +159,7 @@ Frontend
 - [x] Migration applied + verified on Supabase — revision `c633bb4d64f4` (nullable `tickets.tags`); `alembic current` = head
 - [x] `npm run lint` + `npm run build` + detector — eslint clean, tsc+vite build passes, `impeccable detect` → `[]`
 - [x] Live e2e vs Supabase: create workflow → create ticket → run recorded + actions visible — **34/34** checks; all temp data cleaned
-- [ ] Manual UI walkthrough (user)
+- [x] Manual UI walkthrough (user) — confirmed "i think its good" 2026-09-28
 - [x] Changed files reviewed; no secrets tracked; logs updated
 
 ## 11. Notes
@@ -176,4 +176,4 @@ Frontend
 - **Live e2e vs Supabase (running uvicorn) → 34/34:** register/authz spot checks (401/403/422), analytics baseline, 2 workflows created (+ invalid trigger 422), ticket created → escalate run `success` (priority `urgent`, tag `e2e`, system message `E2E alert: Refund my duplicate charge`, category `billing` from analysis) and skip run `skipped` (mismatch `category: expected technical_support, actual billing`), list `run_counts`, analytics deltas (total/today/billing/AI all +1), empty PATCH 422, rename 200, unknown DELETE 404, DELETE 204 → runs 404. Cleanup verified: 0 workflows, 0 temp users/tickets — only the user's own account remains.
 - **Safety fix (was planned for pre-M6):** `backend/tests/conftest.py` now *forces* `DATABASE_URL=sqlite://` — the previous `setdefault` (flagged 2026-09-27) could let a shell-exported URL make tests `drop_all` a real database.
 - **En-route infra issue:** orphaned uvicorn processes from earlier sessions kept answering `:8000` with pre-M5 code after a restart (Windows multiprocessing spawn leaves children alive when the reloader parent dies). All python/uvicorn processes killed, one clean instance started, M5 routes confirmed via OpenAPI before e2e.
-- **Pending:** user manual UI walkthrough (create workflow in `/admin/workflows`, open new ticket as customer, watch run + tag + notification + analytics) → then mark Completed and commit.
+- **Pending:** ~~user manual UI walkthrough~~ ✅ confirmed 2026-09-28 (create workflow → new ticket → run success + tag + notification + analytics all worked) → **TASK-006 Completed**; M5 files await the user's commit.

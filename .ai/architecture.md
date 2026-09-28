@@ -4,7 +4,7 @@ This document describes the technical architecture of the project.
 
 It is project-specific and should reflect the actual implementation.
 
-**Current status:** Initial architecture definition. The implementation has not yet been completed. Once implementation exists, the codebase and project configuration become the source of truth.
+**Current status:** Implementation complete (milestones M0–M6). This document was synced to the built system during M6; where it differs from the code, the code wins (see §18).
 
 ---
 
@@ -20,11 +20,11 @@ It is project-specific and should reflect the actual implementation.
 
 A business automation platform that receives customer support inquiries, analyzes them using AI, categorizes and prioritizes them, generates suggested responses, stores the resulting information, and provides an administrative dashboard for managing tickets and automation workflows.
 
-The initial implementation will use a fictional business and generated test data so the system can be developed and tested without requiring a real business.
+A removable demo dataset (`is_demo` rows, seeded by `python -m app.cli.seed_demo`) provides a fictional business and generated test data so the system can be demonstrated and tested without requiring a real business.
 
 ## Architecture Summary
 
-The application uses a full-stack architecture consisting of a React-based frontend, a Python FastAPI backend, PostgreSQL for persistent data storage, and an external AI API for AI-powered processing.
+The application uses a full-stack architecture consisting of a React-based frontend, a Python FastAPI backend, PostgreSQL for persistent data storage, and a backend-only AI provider abstraction (deterministic `mock` by default; **Ollama** — cloud or local — optional) for AI-powered processing.
 
 ```text
 Customer / Administrator
@@ -37,7 +37,9 @@ Customer / Administrator
           ↓
    Application Services
        ↙         ↘
-PostgreSQL      AI API
+PostgreSQL    AI provider (mock | Ollama)
+                  ↘
+            Workflow engine
 ```
 
 The frontend is responsible for user interaction, dashboard presentation, forms, and displaying application state.
@@ -46,7 +48,7 @@ The FastAPI backend is responsible for API endpoints, validation, authentication
 
 PostgreSQL is the primary persistent data store.
 
-The AI provider is an external service used for tasks such as ticket classification, summarization, sentiment analysis, priority analysis, and response generation.
+The AI provider (behind one interface: `mock` and `ollama`) is used for tasks such as ticket classification, summarization, sentiment analysis, priority analysis, and response generation.
 
 ---
 
@@ -56,7 +58,7 @@ The AI provider is an external service used for tasks such as ticket classificat
 
 * **Framework:** React
 * **Language:** TypeScript
-* **UI library:** To be selected during implementation
+* **UI library:** None — plain Tailwind utility classes (no component library)
 * **Styling:** Tailwind CSS
 * **State management:** React state initially; dedicated state management only if required
 * **Forms:** React-based form handling
@@ -68,30 +70,29 @@ The AI provider is an external service used for tasks such as ticket classificat
 * **Framework:** FastAPI
 * **Language:** Python
 * **API style:** REST
-* **Authentication:** Token-based authentication; exact implementation to be finalized during implementation
+* **Authentication:** JWT Bearer tokens (PyJWT, HS256) with bcrypt hashing (passlib); role checks via FastAPI dependencies
 
 ## Database
 
 * **Database:** PostgreSQL
-* **ORM / Query layer:** To be selected during implementation
-* **Hosting:** To be selected
+* **ORM / Query layer:** SQLAlchemy 2 (declarative) + Alembic migrations
+* **Hosting:** Supabase PostgreSQL (session pooler, port 5432)
 * **Realtime capabilities:** Not required for the initial architecture
 
 ## Infrastructure
 
-* **Hosting:** To be selected
-* **Deployment:** To be determined during implementation
+* **Hosting:** Local development only — no deployment target adopted for v1
+* **Deployment:** Not deployed for v1 (explicitly out of scope, PLAN §2)
 * **Storage:** PostgreSQL for structured application data; external object storage only if file uploads are introduced
 * **CDN:** Not required for the initial architecture
 * **DNS:** To be determined during deployment
 
 ## Development
 
-* **Package manager:** npm for frontend; Python package manager for backend
-* **Build tool:** React project's selected build tool
-* **Testing:** pytest for backend; frontend testing framework to be selected
-* **Linting:** Python and TypeScript/React linting tools
-* **Formatting:** Python and TypeScript/React formatters
+* **Package manager:** npm (frontend); pip + `requirements.txt` (backend)
+* **Build tool:** Vite
+* **Testing:** pytest for backend (72 tests); frontend verified with ESLint + `tsc` build (no FE test framework adopted)
+* **Linting:** ESLint (frontend); backend verified by pytest
 * **Version control:** Git
 * **Repository:** GitHub
 
@@ -101,46 +102,44 @@ Only technologies actually introduced into the implementation should remain docu
 
 # 3. Project Structure
 
-The following structure represents the planned organization. It must be updated to match the actual repository once implementation begins.
+The following structure matches the actual repository (synced during M6).
 
 ```text
-ai-business-automation/
+bussess-dashboard/
 │
 ├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── features/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── hooks/
-│   │   ├── lib/
-│   │   ├── types/
-│   │   └── ...
-│   │
-│   └── ...
+│   └── src/
+│       ├── components/    # shared UI (badges, buttons, alerts, spinner)
+│       ├── features/      # auth context + route guards
+│       ├── lib/           # formatting helpers
+│       ├── pages/         # routes: home, auth, portal/, admin/
+│       ├── services/      # typed API client
+│       ├── App.tsx        # route table
+│       └── main.tsx
 │
 ├── backend/
 │   ├── app/
-│   │   ├── api/
-│   │   ├── models/
-│   │   ├── schemas/
-│   │   ├── services/
-│   │   ├── ai/
-│   │   ├── workflows/
-│   │   ├── database/
-│   │   ├── core/
+│   │   ├── api/           # routers: health, auth, tickets, admin, workflows
+│   │   ├── ai/            # provider abstraction: mock.py, ollama.py, schemas
+│   │   ├── workflows/     # capped automation engine
+│   │   ├── services/      # analysis, analytics, workflow services
+│   │   ├── schemas/       # Pydantic request/response contracts
+│   │   ├── models/        # SQLAlchemy models + enums
+│   │   ├── cli/           # create_admin, seed_demo
+│   │   ├── database/      # engine, session, declarative base
+│   │   ├── core/          # config, security
 │   │   └── main.py
-│   │
+│   ├── alembic/           # migrations (versions/)
 │   └── tests/
 │
-├── docs/
+├── .ai/                   # harness: rules, architecture, workflow, context, tasks/
+├── PLAN.md                # milestone roadmap M0–M6
+├── AGENTS.md
+├── README.md
 │
-├── .ai/
-│   ├── architecture.md
-│   ├── rules.md
-│   └── decisions.md
-│
-└── README.md
+├── progress.md
+├── decisions.md
+└── results.md
 ```
 
 ### Planned responsibilities
@@ -150,7 +149,7 @@ frontend/src/components/
 → Reusable UI components.
 
 frontend/src/features/
-→ Feature-specific frontend functionality.
+→ Feature-specific frontend functionality (auth context, route guards).
 
 frontend/src/pages/
 → Application-level pages and routes.
@@ -158,14 +157,8 @@ frontend/src/pages/
 frontend/src/services/
 → Communication with backend APIs.
 
-frontend/src/hooks/
-→ Reusable React hooks.
-
 frontend/src/lib/
-→ Shared frontend utilities.
-
-frontend/src/types/
-→ Shared TypeScript types.
+→ Shared frontend utilities (formatting).
 
 backend/app/api/
 → FastAPI route definitions.
@@ -180,10 +173,13 @@ backend/app/services/
 → Application and business logic.
 
 backend/app/ai/
-→ AI provider integration and AI-related processing.
+→ AI provider abstraction and AI-related processing.
 
 backend/app/workflows/
 → Business automation and workflow execution logic.
+
+backend/app/cli/
+→ Operator commands (create_admin, seed_demo).
 
 backend/app/database/
 → Database connection and persistence configuration.
@@ -191,17 +187,20 @@ backend/app/database/
 backend/app/core/
 → Application configuration and cross-cutting backend functionality.
 
+backend/alembic/
+→ Versioned schema migrations.
+
 backend/tests/
 → Automated backend tests.
 ```
 
-These responsibilities must be verified against the actual code after implementation.
+These responsibilities reflect the implemented code (synced during M6).
 
 ---
 
 # 4. Application Layers
 
-The planned backend organization uses the following logical separation:
+The backend organization uses the following logical separation:
 
 ```text
 Presentation / API
@@ -314,24 +313,21 @@ Frontend Validation
    ↓
 POST /api/tickets
    ↓
-FastAPI
+FastAPI → Request Validation → Ticket Service → PostgreSQL
    ↓
-Request Validation
-   ↓
-Ticket Service
-   ↓
-PostgreSQL
-   ↓
-AI Processing
-   ↓
-Classification / Priority / Summary
-   ↓
-PostgreSQL
-   ↓
-API Response
+201 Response (returned immediately)
    ↓
 React UI
+   ↓
+Background tasks (FastAPI BackgroundTasks, each with its own DB session)
+   ├── AI analysis: provider → Pydantic validation → PostgreSQL
+   │     (+ category/priority write-back onto the ticket)
+   └── Workflow evaluation: ticket.created → AND conditions → actions
+         (exactly one workflow_runs row: success / skipped / failed)
 ```
+
+Analysis and workflow evaluation never delay or break ticket creation —
+provider or workflow failures are recorded as `failed` rows.
 
 ## Reading Tickets
 
@@ -340,7 +336,7 @@ Administrator
    ↓
 React Dashboard
    ↓
-GET /api/tickets
+GET /api/admin/tickets
    ↓
 FastAPI
    ↓
@@ -391,15 +387,17 @@ Protected API Requests
 
 ## Notifications
 
-Notifications are not part of the initial implementation unless a notification provider is explicitly introduced.
+Notifications are recorded only (decision D7): the `record_notification`
+workflow action appends a system message to the ticket, and run details are
+stored on `workflow_runs`. No email/push provider is integrated.
 
 ---
 
 # 6. Frontend Architecture
 
-The frontend will use React with TypeScript.
+The frontend uses React with TypeScript.
 
-The planned organization is feature-oriented while keeping shared UI components separate.
+The organization is feature-oriented while keeping shared UI components separate.
 
 ```text
 Page
@@ -415,24 +413,29 @@ FastAPI
 
 ## Page Structure
 
-Planned application areas include:
+Implemented application areas (routes from `frontend/src/App.tsx`):
 
 ```text
-Customer Portal
-├── Submit Ticket
-├── Ticket Status
-└── Ticket Details
+Public
+├── /                     Home (backend status)
+├── /login  /register     Auth
+└── *                     404
 
-Admin Dashboard
-├── Overview
-├── Tickets
-├── Customers
-├── AI Analysis
-├── Workflows
-└── Analytics
+Customer Portal (role: customer)
+├── /portal               Ticket list
+├── /portal/new           Submit ticket
+└── /portal/tickets/:id   Ticket detail + replies
+
+Admin Console (role: admin)
+├── /admin                Overview (aggregates + recent activity)
+├── /admin/tickets        Ticket list (+ ?status= filter)
+├── /admin/tickets/:id    Status, AI review + human confirm, tags, replies
+├── /admin/workflows      Workflow list + run counts
+├── /admin/workflows/new  Create workflow (cap-aware form)
+├── /admin/workflows/:id  Edit workflow + run history
+├── /admin/analytics      7/30/90-day analytics
+└── /admin/customers      Customers list
 ```
-
-Exact routes should be documented after implementation.
 
 ## Component Structure
 
@@ -490,9 +493,9 @@ Frontend code should not directly access the PostgreSQL database.
 
 # 7. Backend Architecture
 
-The backend will use Python and FastAPI.
+The backend uses Python and FastAPI.
 
-Planned request flow:
+Request flow:
 
 ```text
 HTTP Request
@@ -514,18 +517,36 @@ HTTP Response
 
 ## Routes
 
-Routes will be grouped by domain, such as:
+Actual route groups (OpenAPI at `/docs` is the endpoint source of truth):
 
 ```text
-/api/auth
-/api/tickets
-/api/customers
-/api/ai
-/api/workflows
-/api/analytics
+/api/health                   liveness check
+
+/api/auth/*                   register, login, me
+
+/api/tickets/*                customer ticket CRUD + replies (own tickets only)
+  POST /api/tickets
+  GET  /api/tickets
+  GET  /api/tickets/{id}
+  POST /api/tickets/{id}/messages
+
+/api/admin/*                  admin-gated: every route behind require_admin
+  GET  /api/admin/overview
+  GET  /api/admin/tickets            (+ GET/PATCH /{id}, PATCH /{id}/analysis)
+  GET  /api/admin/customers
+  GET  /api/admin/analytics?days=1..90
+
+/api/admin/workflows/*        admin-gated workflow CRUD + run history
+  GET/POST /api/admin/workflows
+  GET/PATCH/DELETE /api/admin/workflows/{id}
+  GET  /api/admin/workflows/{id}/runs
 ```
 
-Exact endpoints must be documented only after they exist in the implementation.
+AI analysis and workflow execution deliberately have **no HTTP surface** —
+they run as background tasks after ticket creation.
+
+Note: the original sketch here (`/api/workflows`, `/api/ai`, `/api/analytics`)
+was reconciled to reality during M6 — admin endpoints live under `/api/admin/*`.
 
 ## Controllers / Routes
 
@@ -569,33 +590,31 @@ External AI services should be accessed through dedicated integration/service mo
 
 PostgreSQL will be the primary relational database.
 
-The initial conceptual data model includes:
+The implemented data model (SQLAlchemy models in `backend/app/models/`,
+migrations in `backend/alembic/versions/`):
 
 ```text
-users
-  │
-  └── tickets
-        │
-        ├── ticket_messages
-        │
-        └── ai_analysis
+users ──1:1── customers ──1:N── tickets ──1:N── ticket_messages
+ │                                  │
+ │                                  └──1:1── ai_analysis
+ │
+ └── (role: customer | admin; is_demo marks seed rows)
 
-customers
-  │
-  └── tickets
-
-workflows
-  │
-  └── workflow_runs
+workflows ──1:N── workflow_runs
+   (is_demo marks seed rows; conditions/actions stored as JSON)
 ```
 
-The exact schema will be determined during implementation.
+Notable columns beyond the basics: `tickets.category`, `tickets.priority`,
+`tickets.tags` (JSON, added M5), `ai_analysis` = status/category/priority/
+sentiment/summary/suggested_response/provider/error_message/
+`is_human_confirmed`, `users.is_demo` + `workflows.is_demo` (M6 seed flags).
 
-## Planned Core Entities
+## Core Entities
 
 ### Users
 
-Application users and administrators.
+Customer and admin accounts (`role` enum, bcrypt hash). `is_demo` marks
+seed-created rows (M6); admins are provisioned only via the CLI.
 
 ### Customers
 
@@ -603,7 +622,9 @@ Customers submitting support inquiries.
 
 ### Tickets
 
-Support requests submitted by customers.
+Support requests submitted by customers: `status`, `category` and
+`priority` (set by AI write-back / admin review), `tags` (JSON, M5),
+timestamps.
 
 ### Ticket Messages
 
@@ -611,33 +632,36 @@ Messages associated with support tickets.
 
 ### AI Analysis
 
-Structured results generated from AI processing.
-
-Potential fields include:
-
-* Category
-* Priority
-* Sentiment
-* Summary
-* Suggested response
+Structured results from AI processing, validated against `AnalysisResult`:
+status (pending/completed/failed), provider (`mock`/`ollama`), category,
+priority, sentiment, summary, suggested response, sanitized error message,
+and `is_human_confirmed` (human review flag, M4).
 
 ### Workflows
 
-Configured automation rules.
+Configured automation rules: fixed `ticket.created` trigger, AND-only
+`conditions` and `actions` (JSON columns), `is_active`, `is_demo` (M6).
 
 ### Workflow Runs
 
-Records of workflow executions.
+One record per evaluation: status (`success`/`skipped`/`failed`) + `details`
+JSON (executed actions, or the mismatch/error that stopped it).
 
 ## Relationships
 
-The exact foreign keys and indexes will be documented after the database schema is implemented.
+Foreign keys use `ondelete="CASCADE"` (users→customers→tickets→messages/
+analyses; workflows→runs), mirrored by ORM relationship cascades so demo
+removal behaves identically on PostgreSQL and SQLite. `users.email` is
+unique; lookup columns (`tickets.customer_id`, `ticket_messages.ticket_id`)
+are indexed.
 
 ## Migration Strategy
 
 Database schema changes should use a controlled migration system rather than manually modifying production databases.
 
-The specific migration tool will be selected during implementation.
+Schema changes use Alembic: autogenerate a reviewed version file, apply with
+`alembic upgrade head`. DDL runs through the Supabase **session pooler**
+(port 5432) — the transaction pooler (6543) rejects DDL.
 
 ## Realtime
 
@@ -649,9 +673,9 @@ If realtime updates become a requirement, the architecture should be updated bef
 
 # 9. Authentication & Authorization
 
-Authentication will use token/session-based authentication.
-
-The exact authentication implementation will be selected during backend implementation.
+Authentication uses JWT access tokens (HS256 via PyJWT, 60-minute expiry)
+sent as `Authorization: Bearer`, with bcrypt password hashing (passlib) —
+decision D4.
 
 Planned flow:
 
@@ -675,14 +699,16 @@ Protected Resource
 
 ## Authorization
 
-The initial application is expected to have at least:
+Two roles, enforced server-side (decision D4/M4):
 
 ```text
-Customer
-Administrator
+Customer      → /api/tickets/* (own tickets only)
+Administrator → /api/admin/* (every admin route behind require_admin)
 ```
 
-Exact roles and permissions must be defined during implementation.
+Public registration can never grant admin — admins are created with
+`python -m app.cli.create_admin`. Frontend route guards mirror these rules,
+but the backend is authoritative.
 
 ## Security Rules
 
@@ -701,26 +727,13 @@ The backend exposes a REST API through FastAPI.
 Planned API domains include:
 
 ```text
-Authentication
-/api/auth/*
-
-Tickets
-/api/tickets/*
-
-Customers
-/api/customers/*
-
-AI
-/api/ai/*
-
-Workflows
-/api/workflows/*
-
-Analytics
-/api/analytics/*
+Authentication   /api/auth/*          implemented
+Tickets          /api/tickets/*       implemented
+Admin            /api/admin/*         implemented (overview, tickets, customers, analytics)
+Workflows        /api/admin/workflows/* implemented
+Health           /api/health          implemented
+AI               no HTTP surface — background provider calls only
 ```
-
-The following are conceptual API domains only and do not represent implemented endpoints until those endpoints exist in the codebase.
 
 For each implemented endpoint, documentation should include:
 
@@ -740,7 +753,10 @@ For each implemented endpoint, documentation should include:
 
 ## AI Provider
 
-**Service:** External LLM / AI API
+**Service:** AI provider behind the `AIProvider` interface — `mock`
+(default: deterministic keyword rules, offline, used by tests and the seed)
+and `ollama` (real model via `POST /api/chat` with JSON mode — Ollama cloud
+endpoint by default, any local/Ollama-compatible endpoint via config).
 
 **Purpose:**
 
@@ -756,21 +772,26 @@ Backend AI service.
 backend/app/ai/
 ```
 
-**Authentication method:**
+**Configuration method:**
 
-Environment-based API credential.
+Environment only (`AI_PROVIDER`, `OLLAMA_BASE_URL`, `OLLAMA_MODEL`,
+`OLLAMA_API_KEY` — required for Ollama cloud, empty for local) — loaded from `.env`,
+never committed.
 
 **Important limitations:**
 
-* API availability may vary.
-* AI output must be validated.
-* AI responses should not be treated as inherently correct.
-* API usage may incur costs.
-* Rate limits may apply.
+* Provider availability depends on config: the Ollama endpoint (cloud or local)
+  must be reachable and the configured model available there.
+* AI output must be validated — always passed through the Pydantic `AnalysisResult` gate.
+* AI responses should not be treated as inherently correct (human confirmation flag exists).
+* Hosted/cloud endpoints (Ollama cloud) consume a monthly free allowance then
+  per-token credits; a local Ollama endpoint has no usage cost.
 
 **Failure behavior:**
 
-AI processing failures should be handled by the backend without exposing provider-specific errors directly to users.
+AI failures are caught by the analysis service and persisted as a `failed`
+analysis with a single-line sanitized message — ticket creation is never
+affected and provider-specific details stay server-side (logged only).
 
 Additional external services should only be added when required by the implementation.
 
@@ -880,7 +901,60 @@ Background job infrastructure such as Redis and Celery should only be introduced
 
 **Impact:**
 
-Initial AI processing may occur synchronously. Background processing can be introduced later as an architectural change.
+AI analysis and workflow evaluation run as FastAPI `BackgroundTasks` after
+the response, each opening its own DB session (no Redis/Celery). A process
+restart can drop a task that has not started — see §15.
+
+---
+
+## Decision 6 — AI Provider Behind One Interface
+
+**Date:** Mock-first built in M3; provider choice resolved 2026-09-28 (M6)
+
+**Reason:**
+
+Analysis must be deterministic and offline for tests/demos, yet able to use
+a real model without touching callers.
+
+**Alternatives considered:**
+
+* Hosted APIs (OpenAI / Anthropic)
+* Direct SDK calls without an abstraction
+
+**Why this approach was selected:**
+
+`AIProvider` protocol + factory (`app/ai/base.py`): `mock` stays the default;
+`ollama` calls an Ollama-compatible endpoint (Ollama cloud, or a local install)
+with JSON output. Every result passes
+the same Pydantic `AnalysisResult` gate before it can be persisted.
+
+**Impact:**
+
+Switching engines is a single `.env` value (`AI_PROVIDER`); provider
+failures persist as `failed` analyses; no cloud key is required by default.
+
+---
+
+## Decision 7 — Capped Workflow Engine
+
+**Date:** M5 (2026-09-28)
+
+**Reason:**
+
+Automation is a core feature, but unbounded automation is scope creep and a
+reliability risk (PLAN §5 cap).
+
+**Why this approach was selected:**
+
+One trigger (`ticket.created`), AND-only conditions (≤ 5), ≤ 5 actions from
+exactly 4 types. Exactly one `workflow_runs` row per evaluation
+(`success`/`skipped`/`failed`); failing actions roll back via savepoint; the
+engine never raises into a request.
+
+**Impact:**
+
+Workflows are config-driven JSON, not a visual programming language;
+adding an action type is a deliberate engine + schema change.
 
 ---
 
@@ -984,36 +1058,60 @@ Errors should be:
 
 ## Naming Conventions
 
-Naming conventions should follow the conventions of the language and framework being used.
+Established conventions (post-implementation):
 
-The final naming conventions should be documented after the initial implementation establishes the project's actual patterns.
+* Python: snake_case modules/functions/attributes, PascalCase classes
+* API JSON: snake_case fields (matches the Python side)
+* React: PascalCase components (`.tsx`), camelCase props/state, named exports
+* Routes: lowercase URL paths; one page per file under `frontend/src/pages/`
 
 ---
 
 # 15. Known Technical Debt
 
-No known technical debt exists at the initial architecture stage.
-
-Potential future areas include:
+Synced during M6. Current items:
 
 ```text
 Issue:
-Synchronous AI processing may become slow under increased traffic.
+Background tasks (AI analysis, workflow runs) run in-process via FastAPI
+BackgroundTasks — a process restart mid-run drops a task that has not started.
 
 Impact:
-Longer API response times.
+Rare locally; a restarting deploy could lose pending analyses/runs.
 
 Current workaround:
-Process AI requests synchronously during the initial implementation.
+Failures are recorded as `failed` rows and are safe to re-trigger; local dev
+rarely restarts mid-run.
 
 Potential solution:
-Introduce background job processing.
+External task queue/worker once a deployment target exists.
 
 Priority:
-Future
+Future (post-v1)
 ```
 
-This should only be considered technical debt once the limitation actually affects the implementation.
+```text
+Issue:
+No frontend unit tests — verification is ESLint + `tsc` build + manual
+walkthroughs; the backend has 72 pytest tests.
+
+Impact:
+Frontend regressions rely on walkthroughs to catch.
+
+Priority:
+Low
+```
+
+```text
+Issue:
+No deployment target for v1 (local development only).
+
+Impact:
+The app cannot be demoed from a public URL yet.
+
+Priority:
+Out of scope for v1 (PLAN §2); revisit post-handoff
+```
 
 ---
 
