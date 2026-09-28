@@ -55,19 +55,19 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-ground px-4 py-12">
       <div className="w-full max-w-md">
-        <h1 className="text-center text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="display text-center text-[28px] text-ink">
           Sign in
         </h1>
-        <p className="mt-2 text-center text-sm text-slate-600">
+        <p className="mt-2 text-center text-sm text-panel-600">
           Access your support tickets and updates.
         </p>
 
         <form
           onSubmit={handleSubmit}
           noValidate
-          className="mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+          className="mt-8 border border-panel-200 bg-white p-6 shadow-sm"
         >
           <div className="flex flex-col gap-5">
             <ErrorAlert message={requestError} />
@@ -107,11 +107,11 @@ export function LoginPage() {
           </div>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-600">
+        <p className="mt-6 text-center text-sm text-panel-600">
           New here?{" "}
           <Link
             to="/register"
-            className="font-medium text-emerald-700 underline-offset-4 hover:underline"
+            className="font-medium text-route-700 underline-offset-4 hover:underline"
           >
             Create an account
           </Link>

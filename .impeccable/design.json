@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-28T21:06:00Z",
+  "title": "Design System: AI Business Automation Platform",
+  "extensions": {
+    "colorMeta": {
+      "ground-aluminium": {
+        "role": "neutral",
+        "displayName": "Aluminium Ground",
+        "canonical": "#e6e9ec",
+        "tonalRamp": ["#c3c8cd", "#cdd2d7", "#d7dbdf", "#e0e3e7", "#e6e9ec", "#eef0f2", "#f4f6f7", "#f7f8f9"]
+      },
+      "panel-500": {
+        "role": "neutral",
+        "displayName": "Panel Mid",
+        "canonical": "#5e656c",
+        "tonalRamp": ["#0b0d0f", "#15181b", "#272b30", "#3a3f45", "#50565c", "#5e656c", "#9aa0a7", "#c7cbd0"]
+      },
+      "route-600": {
+        "role": "primary",
+        "displayName": "Routing Blue",
+        "canonical": "#1b3ae0",
+        "tonalRamp": ["#111f78", "#142ca8", "#1b3ae0", "#3350f0", "#6376ff", "#94a3ff", "#c0c9ff", "#dee3ff"]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Ink",
+        "canonical": "#15181b",
+        "tonalRamp": ["#0b0d0f", "#15181b", "#2a2f35", "#3a3f45", "#50565c", "#5e656c", "#9aa0a7", "#c7cbd0"]
+      },
+      "signal-500": {
+        "role": "secondary",
+        "displayName": "Signal Amber",
+        "canonical": "#eda200",
+        "tonalRamp": ["#7a4e00", "#a86a00", "#d28a00", "#eda200", "#ffd98a", "#ffebc4", "#fff7e6", "#fffdf7"]
+      },
+      "fault-600": {
+        "role": "tertiary",
+        "displayName": "Fault Red",
+        "canonical": "#c81e1e",
+        "tonalRamp": ["#7a1111", "#9f1717", "#c81e1e", "#dc2626", "#f08a8a", "#fac7c7", "#fde3e3", "#fef2f2"]
+      },
+      "hazard-400": {
+        "role": "tertiary",
+        "displayName": "Hazard Yellow",
+        "canonical": "#ffd000",
+        "tonalRamp": ["#7a5c00", "#a86a00", "#c89600", "#ffd000", "#ffdf56", "#ffe98a", "#fff3b0", "#fffae0"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Station Counter / Page Title",
+        "purpose": "Archivo 800 set tight: the Overview H1, station counts, record titles, big readouts."
+      },
+      "title": {
+        "displayName": "Plate Title",
+        "purpose": "Panel and dialog headings; ticket subject on a record page."
+      },
+      "body": {
+        "displayName": "Prose",
+        "purpose": "Customer messages, operator replies, helper copy, table rows — anything a person wrote."
+      },
+      "label": {
+        "displayName": "Engraved Legend",
+        "purpose": "Section headings and field labels: 11px, 72% width, uppercase, +0.09em — cut into the panel."
+      },
+      "machine": {
+        "displayName": "Machine Print",
+        "purpose": "Courier Prime: carrier IDs, timestamps, routing codes, counts, tags, workflow rules, and the AI's own words inside a machine plate."
+      }
+    },
+    "shadows": [
+      {
+        "name": "plate-seat",
+        "value": "0 1px 2px rgba(21,24,27,0.08), 0 1px 3px rgba(21,24,27,0.06)",
+        "purpose": "Resting panels, tables and list containers — a faint seat, never a float."
+      },
+      {
+        "name": "head-row-lip",
+        "value": "0 6px 14px -10px rgba(21,24,27,0.55)",
+        "purpose": "The first row of a list only, paired with a 2px lift: marks the head of the queue."
+      },
+      {
+        "name": "plate-elevated",
+        "value": "0 1px 2px rgba(21,24,27,0.1), 0 10px 24px -14px rgba(21,24,27,0.4)",
+        "purpose": "Genuinely lifted surfaces only (dialogs, sticky toolbars)."
+      },
+      {
+        "name": "plate-raised",
+        "value": "0 2px 4px rgba(21,24,27,0.12), 0 18px 34px -18px rgba(21,24,27,0.5)",
+        "purpose": "Overlay dialogs sitting above the working surface."
+      },
+      {
+        "name": "engraved-groove",
+        "value": "border-bottom: 1px solid rgba(21,24,27,0.16); box-shadow: 0 1px 0 rgba(255,255,255,0.85)",
+        "purpose": "Not a shadow: the default region separator — a dark lip with a white highlight beneath it."
+      }
+    ],
+    "motion": [
+      {
+        "name": "seal-strike",
+        "value": "380ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "The one authored moment: the ink seal band wipes left-to-right across confirmed machine output, once, on mount."
+      },
+      {
+        "name": "state-transition",
+        "value": "150ms ease",
+        "purpose": "Background/border colour changes on buttons, chips, nav tabs and table rows."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "prefers-reduced-motion collapses every transition and the seal wipe."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The only solid blue control on a screen — one per view, for the action the line is asking of a human.",
+      "html": "<button class=\"ds-btn-primary\">Open review queue <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"m12 5 7 7-7 7\"/></svg></button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #1b3ae0; color: #ffffff; padding: 10px 16px; border: none; border-radius: 3px; font-family: \"Archivo Variable\", ui-sans-serif, system-ui, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.2; cursor: pointer; transition: background-color 150ms ease; } .ds-btn-primary:hover { background: #142ca8; } .ds-btn-primary:active { background: #111f78; } .ds-btn-primary:focus-visible { outline: 2px solid #1b3ae0; outline-offset: 2px; } .ds-btn-primary[disabled] { background: #c7cbd0; color: #50565c; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "White plate with a hairline stroke — the default paired action beside a primary.",
+      "html": "<button class=\"ds-btn-secondary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m12 19-7-7 7-7\"/><path d=\"M19 12H5\"/></svg> Back to tickets</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #ffffff; color: #3a3f45; padding: 10px 16px; border: 1px solid #c7cbd0; border-radius: 3px; font-family: \"Archivo Variable\", ui-sans-serif, system-ui, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.2; cursor: pointer; transition: background-color 150ms ease, border-color 150ms ease; } .ds-btn-secondary:hover { background: #eceef0; } .ds-btn-secondary:active { background: #dfe2e5; } .ds-btn-secondary:focus-visible { outline: 2px solid #1b3ae0; outline-offset: 2px; } .ds-btn-secondary[disabled] { color: #50565c; cursor: not-allowed; opacity: 0.6; }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Solid fault red for irreversible actions; armed confirmations are capped by the 45° hazard band instead.",
+      "html": "<button class=\"ds-btn-danger\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 6h18\"/><path d=\"M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"/></svg> Remove tag</button>",
+      "css": ".ds-btn-danger { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #c81e1e; color: #ffffff; padding: 10px 16px; border: none; border-radius: 3px; font-family: \"Archivo Variable\", ui-sans-serif, system-ui, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.2; cursor: pointer; transition: background-color 150ms ease; } .ds-btn-danger:hover { background: #9f1717; } .ds-btn-danger:focus-visible { outline: 2px solid #c81e1e; outline-offset: 2px; } .ds-btn-quiet-danger { background: #ffffff; color: #9f1717; border: 1px solid #fac7c7; } .ds-btn-quiet-danger:hover { background: #fef2f2; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "White field with a hairline stroke; focus swaps the stroke and caret to routing blue.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Subject</span><input class=\"ds-input\" type=\"text\" placeholder=\"What is the customer asking?\" /></label>",
+      "css": ".ds-field { display: block; font-family: \"Archivo Variable\", ui-sans-serif, system-ui, sans-serif; } .ds-field-label { display: block; font-size: 11px; font-weight: 700; font-stretch: 72%; text-transform: uppercase; letter-spacing: 0.09em; color: #50565c; margin-bottom: 6px; } .ds-input { width: 100%; box-sizing: border-box; background: #ffffff; color: #15181b; border: 1px solid #c7cbd0; border-radius: 3px; padding: 10px 14px; font-family: \"Archivo Variable\", ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.4; caret-color: #1b3ae0; transition: border-color 150ms ease; } .ds-input::placeholder { color: #5e656c; } .ds-input:hover { border-color: #9aa0a7; } .ds-input:focus { outline: none; border-color: #1b3ae0; box-shadow: 0 0 0 1px #1b3ae0; } .ds-input:focus-visible { outline: 2px solid #1b3ae0; outline-offset: 2px; } .ds-input[disabled] { background: #c7cbd0; color: #50565c; cursor: not-allowed; }"
+    },
+    {
+      "name": "Filter Pill",
+      "kind": "chip",
+      "refersTo": "chip-selected",
+      "description": "One selection language learned once: solid ink when selected, white plate with a hairline when not. Reused for status groups, AI-triage groups and the analytics time window.",
+      "html": "<div class=\"ds-pill-row\"><button class=\"ds-pill is-selected\" aria-pressed=\"true\">Needs review</button><button class=\"ds-pill\" aria-pressed=\"false\">Confirmed</button><button class=\"ds-pill\" aria-pressed=\"false\">All</button></div>",
+      "css": ".ds-pill-row { display: inline-flex; gap: 8px; flex-wrap: wrap; } .ds-pill { font-family: \"Archivo Variable\", ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 3px; background: #ffffff; color: #50565c; border: 1px solid #c7cbd0; cursor: pointer; transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease; } .ds-pill:hover { background: #eceef0; } .ds-pill.is-selected { background: #15181b; color: #ffffff; border-color: #15181b; } .ds-pill.is-selected:hover { background: #2a2f35; } .ds-pill:focus-visible { outline: 2px solid #1b3ae0; outline-offset: 2px; }"
+    },
+    {
+      "name": "Station Nav Tab",
+      "kind": "nav",
+      "refersTo": "nav-tab-active",
+      "description": "Engraved header strip: inactive tabs are white plates, the active tab is a solid ink stamp carrying a lucide icon.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-tab is-active\" href=\"#\" aria-current=\"page\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg> Customers</a><a class=\"ds-nav-tab\" href=\"#\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 3v16a2 2 0 0 0 2 2h16\"/><path d=\"M7 16v-3\"/><path d=\"M12 16v-6\"/><path d=\"M17 16V7\"/></svg> Analytics</a></nav>",
+      "css": ".ds-nav { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid rgba(21,24,27,0.16); box-shadow: 0 1px 0 rgba(255,255,255,0.85); background: #e6e9ec; } .ds-nav-tab { display: inline-flex; align-items: center; gap: 6px; font-family: \"Archivo Variable\", ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; text-decoration: none; color: #50565c; background: #ffffff; border: 1px solid #c7cbd0; border-radius: 3px; padding: 6px 10px; transition: background-color 150ms ease, color 150ms ease; } .ds-nav-tab:hover { background: #eceef0; color: #15181b; } .ds-nav-tab.is-active { background: #15181b; border-color: #15181b; color: #ffffff; } .ds-nav-tab.is-active:hover { background: #2a2f35; color: #ffffff; } .ds-nav-tab:focus-visible { outline: 2px solid #1b3ae0; outline-offset: 2px; }"
+    },
+    {
+      "name": "Engraved Plate",
+      "kind": "card",
+      "refersTo": "plate",
+      "description": "The container: a white plate milled into the aluminium, with an engraved groove closing its header strip. No floating card, no pill.",
+      "html": "<section class=\"ds-plate\"><header class=\"ds-plate-head\"><span class=\"ds-legend\">Recent tickets</span></header><p class=\"ds-plate-body\">13 carriers · 5 customers · avg priority 2.1/4</p></section>",
+      "css": ".ds-plate { background: #ffffff; border: 1px solid #dfe2e5; border-radius: 4px; box-shadow: 0 1px 2px rgba(21,24,27,0.08), 0 1px 3px rgba(21,24,27,0.06); font-family: \"Archivo Variable\", ui-sans-serif, system-ui, sans-serif; } .ds-plate-head { background: #f7f8f9; border-bottom: 1px solid rgba(21,24,27,0.16); box-shadow: 0 1px 0 rgba(255,255,255,0.85); padding: 8px 16px; } .ds-legend { font-family: \"Archivo Variable\", ui-sans-serif, system-ui, sans-serif; font-stretch: 72%; font-weight: 700; font-size: 11px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.09em; color: #50565c; } .ds-plate-body { margin: 0; padding: 20px; font-size: 15px; line-height: 1.6; color: #15181b; }"
+    },
+    {
+      "name": "Station Rail Node",
+      "kind": "custom",
+      "refersTo": "rail-node",
+      "description": "Signature: the Overview's five-node reading of one queue, mounted on a continuous milled track. Only the REVIEW node — work waiting on a human — fills with routing blue.",
+      "html": "<div class=\"ds-rail\"><div class=\"ds-rail-node\"><span class=\"ds-rail-count\">4</span><span class=\"ds-rail-label\">New</span></div><div class=\"ds-rail-node is-active\"><span class=\"ds-rail-count\">3</span><span class=\"ds-rail-label\">Review</span></div><div class=\"ds-rail-node\"><span class=\"ds-rail-count\">6</span><span class=\"ds-rail-label\">Closed</span></div></div>",
+      "css": ".ds-rail { display: flex; align-items: stretch; gap: 24px; padding: 4px 0; } .ds-rail-node { position: relative; flex: 1; max-width: 120px; text-align: center; background: #ffffff; border: 1px solid #dfe2e5; border-radius: 3px; padding: 12px 16px; box-shadow: 0 1px 2px rgba(21,24,27,0.08), 0 1px 3px rgba(21,24,27,0.06); font-family: \"Archivo Variable\", ui-sans-serif, system-ui, sans-serif; } .ds-rail-node::after { content: \"\"; position: absolute; left: 0; right: 0; bottom: -10px; height: 3px; background: linear-gradient(to bottom, rgba(21,24,27,0.3), rgba(21,24,27,0.14) 45%, rgba(255,255,255,0.9)); } .ds-rail-node.is-active { background: #1b3ae0; border-color: #142ca8; } .ds-rail-count { display: block; font-size: 44px; font-weight: 800; letter-spacing: -0.03em; line-height: 0.95; color: #15181b; font-variant-numeric: tabular-nums; } .ds-rail-node.is-active .ds-rail-count { color: #ffffff; } .ds-rail-label { display: block; margin-top: 6px; font-size: 11px; font-weight: 700; font-stretch: 72%; text-transform: uppercase; letter-spacing: 0.09em; color: #50565c; } .ds-rail-node.is-active .ds-rail-label { color: #dee3ff; }"
+    },
+    {
+      "name": "Machine Plate + Seal Band",
+      "kind": "custom",
+      "refersTo": "seal-band",
+      "description": "Signature: unsealed machine output on a dashed edge with a grey MACHINE head; a human sign-off flips the edge solid and strikes the ink band, stamping their initials.",
+      "html": "<section class=\"ds-machine is-sealed\"><header class=\"ds-machine-head\"><span class=\"ds-legend\">Machine</span><span class=\"ds-machine-src\">AI analysis · gpt-4o-mini · 33m ago</span><span class=\"ds-machine-state\">Sealed</span></header><div class=\"ds-seal-band\"><span class=\"ds-seal-initials\">DA</span><span class=\"ds-legend ds-seal-text\">Confirmed by Demo Administrator</span><span class=\"ds-machine-src ds-seal-text\">Sep 28, 2026, 7:55 PM</span></div><div class=\"ds-machine-body\">Customer reports the checkout screen crashes on payment submit. Recommended: ask for a device id and clear the local cart.</div></section>",
+      "css": ".ds-machine { background: #ffffff; border: 1px dashed #9aa0a7; border-radius: 4px; font-family: \"Archivo Variable\", ui-sans-serif, system-ui, sans-serif; } .ds-machine.is-sealed { border-style: solid; border-color: #c7cbd0; } .ds-machine-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; background: #f7f8f9; border-bottom: 1px solid rgba(21,24,27,0.16); box-shadow: 0 1px 0 rgba(255,255,255,0.85); padding: 8px 16px; } .ds-machine-src { font-family: \"Courier Prime\", ui-monospace, \"Courier New\", monospace; font-size: 11px; color: #50565c; font-variant-numeric: tabular-nums; } .ds-machine-state { margin-left: auto; font-size: 11px; font-weight: 700; font-stretch: 72%; text-transform: uppercase; letter-spacing: 0.09em; background: #15181b; color: #ffffff; border: 1px solid #15181b; border-radius: 2px; padding: 2px 6px; } .ds-seal-band { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; overflow: hidden; background: #15181b; padding: 8px 16px; } .ds-seal-band::before { content: \"\"; position: absolute; inset: 0; background: #15181b; transform: scaleX(0); transform-origin: left center; animation: ds-seal-strike 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both; } .ds-seal-band > * { position: relative; } .ds-seal-initials { font-family: \"Courier Prime\", ui-monospace, \"Courier New\", monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #ffffff; border: 1px solid rgba(255,255,255,0.45); border-radius: 2px; padding: 2px 6px; } .ds-seal-text { color: rgba(255,255,255,0.75); } .ds-machine-body { padding: 20px; font-family: \"Courier Prime\", ui-monospace, \"Courier New\", monospace; font-size: 13px; line-height: 1.75; color: #3a3f45; } @keyframes ds-seal-strike { to { transform: scaleX(1); } } @media (prefers-reduced-motion: reduce) { .ds-seal-band::before { animation-duration: 0.01ms; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Pneumatic-Tube Dispatch Desk",
+    "overview": "This is an operations panel, not a marketing site. The reference is a mid-century dispatch office: an aluminium desk surface with stations engraved into it, carriers running a single continuous line, and every stamp on the record meaning something specific. Content sits in recessed plates separated by milled grooves — never in floating rounded cards, never in a grid of interchangeable tiles. The dominant material is neutral metal; colour is scarce, and when it appears it is load-bearing.\n\nProvenance is the product's real subject (AI drafts, humans confirm), so the visual system makes authorship legible: machine matter is set in Courier Prime on a dashed, unsealed plate; human matter is set in Archivo on a solid plate under a blue \"Human\" rule; a completed sign-off strikes a single ink band across the record. Priority is expressed as a count of signal bands, never as a hue, so urgency can never be confused with a status colour.",
+    "keyCharacteristics": [
+      "One aluminium ground; plates are milled into it, separated by engraved grooves.",
+      "A closed six-hue palette law — each hue owns exactly one meaning.",
+      "Archivo carries what humans wrote; Courier Prime carries what the machine printed.",
+      "Squared plates (2–4px radii) instead of pills; icons are lucide strokes at 1.75 weight.",
+      "One continuous motion moment: the ink seal striking across confirmed machine output."
+    ],
+    "rules": [
+      { "name": "The Palette Law", "body": "Each hue means exactly one thing — route = needs a human, signal = machine has it, fault = failed or adverse, hazard = blocked or irreversible, ink = a human marked it, panel = idle or none. A hue may never be borrowed for emphasis, decoration, or variety.", "section": "colors" },
+      { "name": "The Priority Rule", "body": "Priority is never a hue. It is a count of signal bands out of four, with unfilled slots drawn as ghosts. Urgency must never be confusable with a status colour.", "section": "colors" },
+      { "name": "The Zero-Green Rule", "body": "There is no green in this system. Success is not a tint — a completed action is settled, so it renders as an ink-outlined plate.", "section": "colors" },
+      { "name": "The Provenance Rule", "body": "If the machine printed it, it is set in Courier. If a person wrote it, it is set in Archivo. Type carries authorship where a colour may not.", "section": "typography" },
+      { "name": "The Legend Rule", "body": "Section headings are never sentence-case bold. They are 11px Archivo compressed to 72% width, uppercase, +0.09em tracked, in panel-600 — a legend engraved into the panel, not a headline shouting above it.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces rest on the aluminium. Nothing floats, nothing hovers at rest, and no element uses a zero-offset glow. Elevation is earned by state, never applied for depth's sake.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep one meaning per hue, exactly as legislated: route = needs a human, signal = machine has it, fault = failed or adverse, hazard = blocked or irreversible, ink = a human marked it, panel = idle.",
+      "Do express priority as a count of signal bands (1–4) with ghost slots, never as a colour.",
+      "Do keep plate and typeface in agreement: IDs, counts, stamps, tags and the AI's own words in Courier Prime; customer messages, operator replies and notes in Archivo.",
+      "Do separate regions with engraved grooves (1px dark lip + 1px white highlight) and list rows with 1px panel-200 rules inside one outer plate.",
+      "Do cap armed, irreversible confirmations with the 45° hazard band and say plainly what cannot be undone.",
+      "Do use lucide icons at stroke-width: 1.75, and give every icon-only control an aria-label.",
+      "Do hold body text to ≥4.5:1 — panel-700 on white (10.5:1), panel-600 on ground (8.6:1), route-700 on route-50 (7.5:1), panel-500 on ground (4.85:1)."
+    ],
+    "donts": [
+      "Don't borrow a hue for decoration, variety, or emphasis — a screen with no red on it has no failures.",
+      "Don't use green, candy tints, or any success colour; settled states are ink-outlined plates.",
+      "Don't use emoji or unicode glyph stand-ins for icons, gradient text, glassmorphism, blur, or border-left accents wider than 1px.",
+      "Don't round past 4px, use pill shapes for filters or badges, or let a border-radius exceed rounded-2xl.",
+      "Don't stack interchangeable KPI tiles in a page's first viewport, or float a grid of identical rounded cards where a plate and hairline rules would do.",
+      "Don't apply a zero-offset shadow or a hard 4px 4px 0 block shadow; shadows are ink-tinted, offset, and rare.",
+      "Don't set a human's words in Courier, or an AI paragraph in Archivo: authorship and typeface must never disagree."
+    ]
+  }
+}

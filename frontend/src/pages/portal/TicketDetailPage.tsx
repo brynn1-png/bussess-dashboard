@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   ErrorAlert,
   Field,
+  Icon,
   LoadError,
   PriorityBadge,
   Spinner,
@@ -11,6 +12,7 @@ import {
   inputClass,
   primaryButtonClass,
 } from "../../components/ui";
+import { ArrowLeft } from "lucide-react";
 import { formatDateTime, timeAgo } from "../../lib/format";
 import {
   ApiError,
@@ -93,7 +95,7 @@ export function TicketDetailPage() {
 
   if (state === "loading") {
     return (
-      <div className="flex justify-center py-16 text-emerald-600">
+      <div className="flex justify-center py-16 text-signal-700">
         <Spinner />
       </div>
     );
@@ -101,9 +103,9 @@ export function TicketDetailPage() {
 
   if (state === "notfound") {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-12 text-center">
-        <p className="text-sm font-medium text-slate-900">Ticket not found</p>
-        <p className="mt-1 text-sm text-slate-600">
+      <div className="border border-panel-200 bg-white px-6 py-12 text-center">
+        <p className="legend">Ticket not found</p>
+        <p className="mt-2 text-sm text-panel-600">
           It may have been closed, or it does not belong to your account.
         </p>
         <Link
@@ -124,9 +126,10 @@ export function TicketDetailPage() {
       >
         <Link
           to="/portal"
-          className="text-sm font-medium text-red-800 underline underline-offset-2"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-fault-800 underline underline-offset-2"
         >
-          ← Back to your tickets
+          <Icon icon={ArrowLeft} className="h-4 w-4" />
+          Back to your tickets
         </Link>
       </LoadError>
     );
@@ -136,62 +139,78 @@ export function TicketDetailPage() {
     <div>
       <Link
         to="/portal"
-        className="text-sm font-medium text-slate-600 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-panel-600 hover:text-ink"
       >
-        ← All tickets
+        <Icon icon={ArrowLeft} className="h-4 w-4" />
+        All tickets
       </Link>
 
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mt-4 border border-panel-200 bg-white p-6">
         <div className="flex items-start justify-between gap-3">
-          <h1 className="text-lg font-bold tracking-tight text-slate-900">
+          <h1 className="display text-[22px] text-ink sm:text-[26px]">
             {ticket.subject}
           </h1>
-          <span className="shrink-0 text-xs text-slate-500 tabular-nums">
+          <span className="mach shrink-0 text-xs text-panel-500">
             #{ticket.id}
           </span>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <StatusBadge status={ticket.status} />
           {ticket.priority && <PriorityBadge priority={ticket.priority} />}
-          <span className="text-xs text-slate-500">
+          <span className="mach text-[11px] text-panel-500">
             Opened {formatDateTime(ticket.created_at)}
           </span>
         </div>
       </div>
 
-      <h2 className="mt-8 text-sm font-semibold text-slate-900">Conversation</h2>
+      <h2 className="legend mt-8">Conversation</h2>
       <ol className="mt-3 flex flex-col gap-3">
-        {ticket.messages.map((message) => (
-          <li
-            key={message.id}
-            className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-semibold text-slate-900">
-                {SENDER_LABELS[message.sender] ?? message.sender}
-              </span>
-              <span
-                className="text-xs text-slate-500 tabular-nums"
-                title={formatDateTime(message.created_at)}
+        {ticket.messages.map((message) => {
+          const machine = message.sender === "system";
+          return (
+            <li
+              key={message.id}
+              className={`bg-white p-4 ${
+                machine
+                  ? "border border-dashed border-panel-400"
+                  : "border border-panel-200"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span
+                  className={`legend ${machine ? "text-panel-700" : "text-ink"}`}
+                >
+                  {SENDER_LABELS[message.sender] ?? message.sender}
+                </span>
+                <span
+                  className="mach text-[11px] text-panel-500"
+                  title={formatDateTime(message.created_at)}
+                >
+                  {timeAgo(message.created_at)}
+                </span>
+              </div>
+              <p
+                className={`mt-2 whitespace-pre-wrap leading-6 ${
+                  machine ? "text-panel-700" : "text-ink"
+                } text-sm`}
               >
-                {timeAgo(message.created_at)}
-              </span>
-            </div>
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-              {message.content}
-            </p>
-          </li>
-        ))}
+                {message.content}
+              </p>
+            </li>
+          );
+        })}
       </ol>
 
       {ticket.status !== "closed" && ticket.status !== "resolved" && (
         <form
           onSubmit={handleReply}
           noValidate
-          className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+          className="mt-6 border border-panel-200 bg-white"
         >
-          <h2 className="text-sm font-semibold text-slate-900">Add a message</h2>
-          <div className="mt-4 flex flex-col gap-4">
+          <div className="groove-b bg-route-50 px-4 py-2">
+            <span className="legend text-route-700">Human · Add a message</span>
+          </div>
+          <div className="flex flex-col gap-4 p-5">
             <ErrorAlert message={replyError} />
             <Field
               label="Your reply"
@@ -212,7 +231,7 @@ export function TicketDetailPage() {
               <button
                 type="submit"
                 className={primaryButtonClass}
-                disabled={sending}
+                disabled={sending || !reply.trim()}
               >
                 {sending && <Spinner className="h-4 w-4" />}
                 {sending ? "Sending…" : "Send message"}

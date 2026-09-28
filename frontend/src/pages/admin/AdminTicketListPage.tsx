@@ -8,8 +8,8 @@ import {
   ReviewBadge,
   Spinner,
   StatusBadge,
-  type ReviewState,
 } from "../../components/ui";
+import { reviewStateOf } from "../../lib/review-state";
 import { timeAgo } from "../../lib/format";
 import {
   listAdminTickets,
@@ -39,16 +39,6 @@ function isValidStatus(value: string | null): value is TicketStatus {
 
 function isValidReview(value: string | null): value is ReviewFilter {
   return REVIEW_FILTERS.some((f) => f.value === value && f.value !== "any");
-}
-
-/** Badge state from the API's two nullable AI fields (null row = "none"). */
-function reviewStateOf(ticket: AdminTicketSummary): ReviewState {
-  if (ticket.analysis_status === null || ticket.is_human_confirmed === null) {
-    return "none";
-  }
-  if (ticket.analysis_status === "failed") return "failed";
-  if (ticket.analysis_status === "pending") return "pending";
-  return ticket.is_human_confirmed ? "confirmed" : "awaiting";
 }
 
 export function AdminTicketListPage() {
@@ -111,10 +101,10 @@ export function AdminTicketListPage() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-xl font-bold tracking-tight text-slate-900">
+        <h1 className="display text-[32px] text-ink sm:text-[40px] lg:text-[48px]">
           Tickets
         </h1>
-        <span className="text-sm text-slate-500">
+        <span className="mach text-xs text-panel-500">
           {showTable && `${tickets.length} shown`}
         </span>
       </div>
@@ -124,7 +114,7 @@ export function AdminTicketListPage() {
         role="group"
         aria-label="Filter by status"
       >
-        <span className="text-xs font-medium text-slate-500">Status</span>
+        <span className="legend w-10 shrink-0">Status</span>
         {STATUS_FILTERS.map((filter) => (
           <FilterPill
             key={filter.value}
@@ -140,7 +130,7 @@ export function AdminTicketListPage() {
         role="group"
         aria-label="Filter by AI review state"
       >
-        <span className="text-xs font-medium text-slate-500">AI</span>
+        <span className="legend w-10 shrink-0">AI</span>
         {REVIEW_FILTERS.map((filter) => (
           <FilterPill
             key={filter.value}
@@ -152,7 +142,7 @@ export function AdminTicketListPage() {
       </div>
 
       {loading && (
-        <div className="mt-10 flex justify-center text-emerald-600">
+        <div className="mt-10 flex justify-center text-signal-700">
           <Spinner />
         </div>
       )}
@@ -167,9 +157,9 @@ export function AdminTicketListPage() {
       )}
 
       {showEmpty && (
-        <div className="mt-8 rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-          <p className="text-sm font-medium text-slate-900">No tickets here</p>
-          <p className="mt-1 text-sm text-slate-600">
+        <div className="mt-8 border border-dashed border-panel-300 bg-white px-6 py-12 text-center">
+          <p className="text-sm font-medium text-ink">No tickets here</p>
+          <p className="mt-1 text-sm text-panel-600">
             {reviewFilter !== "any"
               ? "Nothing matches this AI review filter right now."
               : statusFilter === "all"
@@ -180,7 +170,7 @@ export function AdminTicketListPage() {
             <button
               type="button"
               onClick={() => setSearchParams({})}
-              className="mt-4 text-sm font-medium text-emerald-700 hover:underline"
+              className="mt-4 text-sm font-medium text-route-700 hover:underline"
             >
               Clear filters
             </button>
@@ -189,34 +179,34 @@ export function AdminTicketListPage() {
       )}
 
       {showTable && (
-        <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="mt-6 overflow-x-auto border border-panel-200 bg-white shadow-sm">
           <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50">
-              <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <th scope="col" className="px-4 py-3">Ticket</th>
-                <th scope="col" className="px-4 py-3">Customer</th>
-                <th scope="col" className="px-4 py-3">Status</th>
-                <th scope="col" className="px-4 py-3">AI</th>
-                <th scope="col" className="px-4 py-3">Priority</th>
-                <th scope="col" className="px-4 py-3">Category</th>
-                <th scope="col" className="px-4 py-3 text-right">Updated</th>
+            <thead className="groove-b border-b border-panel-200 bg-panel-50">
+              <tr>
+                <th scope="col" className="legend px-4 py-3">Ticket</th>
+                <th scope="col" className="legend px-4 py-3">Customer</th>
+                <th scope="col" className="legend px-4 py-3">Status</th>
+                <th scope="col" className="legend px-4 py-3">AI</th>
+                <th scope="col" className="legend px-4 py-3">Priority</th>
+                <th scope="col" className="legend px-4 py-3">Category</th>
+                <th scope="col" className="legend px-4 py-3 text-right">Updated</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-panel-100">
               {tickets.map((ticket) => (
-                <tr key={ticket.id} className="transition-colors hover:bg-slate-50">
+                <tr key={ticket.id} className="transition-colors hover:bg-panel-50">
                   <td className="px-4 py-3">
                     <Link
                       to={`/admin/tickets/${ticket.id}`}
-                      className="font-medium text-slate-900 hover:text-emerald-700"
+                      className="font-medium text-ink hover:text-route-700"
                     >
                       {ticket.subject}
                     </Link>
-                    <span className="ml-2 text-xs text-slate-400">
+                    <span className="mach ml-2 text-[11px] text-panel-500">
                       #{ticket.id}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">
+                  <td className="px-4 py-3 text-panel-600">
                     {ticket.customer_name}
                   </td>
                   <td className="px-4 py-3">
@@ -229,15 +219,15 @@ export function AdminTicketListPage() {
                     {ticket.priority ? (
                       <PriorityBadge priority={ticket.priority} />
                     ) : (
-                      <span className="text-xs text-slate-400">—</span>
+                      <span className="text-xs text-panel-500">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">
+                  <td className="px-4 py-3 text-panel-600">
                     {ticket.category ?? (
-                      <span className="text-xs text-slate-400">—</span>
+                      <span className="text-xs text-panel-500">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right text-xs text-slate-500 tabular-nums">
+                  <td className="mach px-4 py-3 text-right text-[11px] text-panel-500">
                     {timeAgo(ticket.updated_at)}
                   </td>
                 </tr>

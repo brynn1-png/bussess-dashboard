@@ -238,6 +238,8 @@ export interface AdminAnalysis {
   summary: string | null;
   suggested_response: string | null;
   is_human_confirmed: boolean;
+  /** Full name of the admin who sealed it; null on rows sealed before it existed. */
+  confirmed_by: string | null;
   provider: string | null;
   error_message: string | null;
   created_at: string;

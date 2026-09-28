@@ -72,6 +72,7 @@ class AnalysisResponse(BaseModel):
     summary: str | None
     suggested_response: str | None
     is_human_confirmed: bool
+    confirmed_by: str | None = None
     provider: str | None
     error_message: str | None
     created_at: datetime

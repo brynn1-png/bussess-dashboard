@@ -4,15 +4,23 @@ import { Link, useParams } from "react-router-dom";
 import {
   ErrorAlert,
   Field,
+  Icon,
   LoadError,
+  MachineHead,
   PriorityBadge,
+  SealBand,
   Spinner,
   StatusBadge,
+  dangerButtonClass,
+  HazardNotice,
   inputClass,
   primaryButtonClass,
   secondaryButtonClass,
+  statusNoticeClass,
+  successNoticeClass,
 } from "../../components/ui";
-import { formatDateTime, timeAgo } from "../../lib/format";
+import { ArrowDown, ArrowLeft } from "lucide-react";
+import { formatDateTime, initialsOf, timeAgo } from "../../lib/format";
 import {
   ApiError,
   addAdminTicketMessage,
@@ -42,14 +50,17 @@ const STATUS_LABELS: Record<TicketStatus, string> = {
   closed: "Closed",
 };
 
+/**
+ * Sentiment is the machine's opinion of a human's words — printed in Courier
+ * so it can never be mistaken for something a person wrote. Adverse is the one
+ * value allowed to carry a hue (fault); positive stays deliberately quiet, so
+ * the machine never gets to sound enthusiastic.
+ */
 const SENTIMENT_STYLES = {
-  positive: "bg-emerald-100 text-emerald-800",
-  neutral: "bg-slate-100 text-slate-700",
-  negative: "bg-red-100 text-red-800",
+  positive: "border-panel-300 bg-white text-panel-700",
+  neutral: "border-panel-200 bg-panel-100 text-panel-600",
+  negative: "border-fault-200 bg-fault-50 text-fault-800",
 } as const;
-
-const dangerButtonClass =
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60";
 
 export function AdminTicketDetailPage() {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -298,7 +309,7 @@ export function AdminTicketDetailPage() {
 
   if (state === "loading") {
     return (
-      <div className="flex justify-center py-16 text-emerald-600">
+      <div className="flex justify-center py-16 text-signal-700">
         <Spinner />
       </div>
     );
@@ -306,9 +317,9 @@ export function AdminTicketDetailPage() {
 
   if (state === "notfound") {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-12 text-center">
-        <p className="text-sm font-medium text-slate-900">Ticket not found</p>
-        <p className="mt-1 text-sm text-slate-600">
+      <div className="border border-panel-200 bg-white px-6 py-12 text-center">
+        <p className="legend">Ticket not found</p>
+        <p className="mt-2 text-sm text-panel-600">
           It may have been deleted, or the id is wrong.
         </p>
         <Link to="/admin/tickets" className={`mt-5 ${primaryButtonClass}`}>
@@ -326,31 +337,42 @@ export function AdminTicketDetailPage() {
       >
         <Link
           to="/admin/tickets"
-          className="text-sm font-medium text-red-800 underline underline-offset-2"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-fault-800 underline underline-offset-2"
         >
-          ← Back to tickets
+          <Icon icon={ArrowLeft} className="h-4 w-4" />
+          Back to tickets
         </Link>
       </LoadError>
     );
   }
 
   const analysis = ticket.analysis;
+  /** True when the suggested-response box no longer matches the saved record. */
+  const analysisDirty =
+    analysis !== null &&
+    analysisDraft.trim() !== (analysis.suggested_response ?? "").trim();
+  /** True when the manage form no longer matches the ticket record. */
+  const mgmtDirty =
+    statusForm !== ticket.status ||
+    priorityForm !== (ticket.priority ?? "") ||
+    categoryValue.trim() !== (ticket.category ?? "");
 
   return (
     <div>
       <Link
         to="/admin/tickets"
-        className="text-sm font-medium text-slate-600 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-panel-600 hover:text-ink"
       >
-        ← All tickets
+        <Icon icon={ArrowLeft} className="h-4 w-4" />
+        All tickets
       </Link>
 
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mt-4 border border-panel-200 bg-white p-6">
         <div className="flex items-start justify-between gap-3">
-          <h1 className="text-lg font-bold tracking-tight text-slate-900">
+          <h1 className="display text-[24px] text-ink sm:text-[28px]">
             {ticket.subject}
           </h1>
-          <span className="shrink-0 text-xs text-slate-500 tabular-nums">
+          <span className="mach shrink-0 text-xs text-panel-500">
             #{ticket.id}
           </span>
         </div>
@@ -360,13 +382,13 @@ export function AdminTicketDetailPage() {
           {ticket.tags.map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200"
+              className="inline-flex items-center border border-panel-300 bg-white px-2 py-0.5 font-mono text-xs text-panel-700"
               title="Added by a workflow"
             >
               {tag}
             </span>
           ))}
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-panel-500">
             {ticket.customer.full_name} · opened {formatDateTime(ticket.created_at)}
           </span>
         </div>
@@ -375,111 +397,136 @@ export function AdminTicketDetailPage() {
       <div className="mt-6 lg:grid lg:grid-cols-3 lg:gap-6">
         <div className="flex flex-col gap-6 lg:col-span-2">
           <section>
-            <h2 className="text-sm font-semibold text-slate-900">Conversation</h2>
+            <h2 className="legend">Conversation</h2>
             <ol className="mt-3 flex flex-col gap-3">
-              {ticket.messages.map((message) => (
-                <li
-                  key={message.id}
-                  className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold text-slate-900">
-                      {SENDER_LABELS[message.sender] ?? message.sender}
-                    </span>
-                    <span
-                      className="text-xs text-slate-500 tabular-nums"
-                      title={formatDateTime(message.created_at)}
+              {ticket.messages.map((message) => {
+                const machine = message.sender === "system";
+                return (
+                  <li
+                    key={message.id}
+                    className={`bg-white p-4 ${
+                      machine
+                        ? "border border-dashed border-panel-400"
+                        : "border border-panel-200"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span
+                        className={`legend ${machine ? "text-panel-700" : "text-ink"}`}
+                      >
+                        {SENDER_LABELS[message.sender] ?? message.sender}
+                      </span>
+                      <span
+                        className="mach text-[11px] text-panel-500"
+                        title={formatDateTime(message.created_at)}
+                      >
+                        {timeAgo(message.created_at)}
+                      </span>
+                    </div>
+                    <p
+                      className={`mt-2 whitespace-pre-wrap text-sm leading-6 ${
+                        machine ? "text-panel-700" : "text-ink"
+                      }`}
                     >
-                      {timeAgo(message.created_at)}
-                    </span>
-                  </div>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                    {message.content}
-                  </p>
-                </li>
-              ))}
+                      {message.content}
+                    </p>
+                  </li>
+                );
+              })}
             </ol>
           </section>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold text-slate-900">
-                AI analysis
-              </h2>
-              {analysis && (
-                <span
-                  className={
-                    analysis.is_human_confirmed
-                      ? "inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800"
-                      : "inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600"
-                  }
-                >
-                  {analysis.is_human_confirmed ? "Human-confirmed" : "AI suggestion"}
-                </span>
-              )}
-            </div>
-
-            {analysis === null && (
-              <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center">
-                <p className="text-sm text-slate-600">
-                  No analysis yet — it runs automatically right after a ticket is
-                  created.
-                </p>
-                <button
-                  type="button"
-                  onClick={reloadTicket}
-                  className={`mt-4 ${secondaryButtonClass}`}
-                >
-                  Check again
-                </button>
+          <section
+            aria-label="AI analysis"
+            className={`bg-white ${
+              analysis?.is_human_confirmed
+                ? "border border-panel-300"
+                : "border border-dashed border-panel-400"
+            }`}
+          >
+            {analysis === null ? (
+              <div className="groove-b bg-panel-50 px-4 py-2">
+                <span className="legend text-panel-700">Machine · AI analysis</span>
               </div>
+            ) : (
+              <MachineHead
+                source={`AI analysis · ${analysis.provider ?? "unknown"}`}
+                sealed={analysis.is_human_confirmed}
+                stamped={timeAgo(analysis.updated_at)}
+              />
             )}
 
-            {analysis !== null && analysis.status === "pending" && (
-              <div className="mt-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-                Analysis is queued — check again in a moment.{" "}
-                <button
-                  type="button"
-                  onClick={reloadTicket}
-                  className="font-semibold underline underline-offset-2"
-                >
-                  Refresh
-                </button>
-              </div>
+            {analysis?.is_human_confirmed && (
+              <SealBand
+                initials={initialsOf(analysis.confirmed_by)}
+                by={analysis.confirmed_by ?? "a human reviewer"}
+                at={formatDateTime(analysis.updated_at)}
+              />
             )}
 
-            {analysis !== null && analysis.status === "failed" && (
-              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                <span className="font-semibold">AI analysis failed.</span>{" "}
-                {analysis.error_message ?? "No further details."} You can still
-                write the suggested response below and confirm it manually.
-              </div>
-            )}
-
-            {analysis !== null && (
-              <div className="mt-4 flex flex-col gap-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-                    {analysis.category ?? "uncategorized"}
-                  </span>
-                  {analysis.priority && (
-                    <PriorityBadge priority={analysis.priority} />
-                  )}
-                  {analysis.sentiment && (
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${SENTIMENT_STYLES[analysis.sentiment]}`}
-                    >
-                      {analysis.sentiment}
-                    </span>
-                  )}
-                  <span className="ml-auto text-xs text-slate-400">
-                    AI: {analysis.provider ?? "unknown"} ·{" "}
-                    {timeAgo(analysis.updated_at)}
-                  </span>
+            <div className="flex flex-col gap-4 p-5">
+              {analysis === null && (
+                <div className="border border-dashed border-panel-300 bg-panel-50 px-4 py-5 text-center">
+                  <p className="text-sm text-panel-600">
+                    No analysis yet — it runs automatically right after a ticket
+                    is created.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={reloadTicket}
+                    className={`mt-4 ${secondaryButtonClass}`}
+                  >
+                    Check again
+                  </button>
                 </div>
+              )}
+
+              {analysis !== null && analysis.status === "pending" && (
+                <div className="border border-signal-200 bg-signal-50 px-4 py-3 text-sm text-signal-800">
+                  Analysis is queued — check again in a moment.{" "}
+                  <button
+                    type="button"
+                    onClick={reloadTicket}
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    Refresh
+                  </button>
+                </div>
+              )}
+
+              {analysis !== null && analysis.status === "failed" && (
+                <div
+                  className="border border-fault-200 bg-fault-50 px-4 py-3 text-sm text-fault-800"
+                  role="alert"
+                >
+                  <span className="font-semibold">AI analysis failed.</span>{" "}
+                  {analysis.error_message ?? "No further details."} You can still
+                  write the suggested response below and confirm it manually.
+                </div>
+              )}
+
+              {analysis !== null && (
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="border border-panel-300 bg-white px-2 py-0.5 font-mono text-xs text-panel-700">
+                      {analysis.category ?? "uncategorized"}
+                    </span>
+                    {analysis.priority && (
+                      <PriorityBadge priority={analysis.priority} />
+                    )}
+                    {analysis.sentiment && (
+                      <span
+                        className={`inline-flex items-center border px-2 py-0.5 font-mono text-xs capitalize ${SENTIMENT_STYLES[analysis.sentiment]}`}
+                      >
+                        {analysis.sentiment}
+                      </span>
+                    )}
+                  </div>
 
                 {analysis.summary && (
-                  <p className="text-sm leading-6 text-slate-700">
+                  /* The machine's own words print in Courier — the face is the
+                     provenance mark (surface brief OWN-WORLD). */
+                  <p className="mach text-[13px] leading-[1.75] text-panel-700">
                     {analysis.summary}
                   </p>
                 )}
@@ -492,7 +539,7 @@ export function AdminTicketDetailPage() {
                   <textarea
                     id="analysis-response"
                     rows={5}
-                    className={`${inputClass} resize-y`}
+                    className={`${inputClass} mach resize-y`}
                     value={analysisDraft}
                     onChange={(e) => {
                       setAnalysisDraft(e.target.value);
@@ -505,15 +552,12 @@ export function AdminTicketDetailPage() {
 
                 <ErrorAlert message={analysisError} />
                 {analysisNotice && (
-                  <p
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
-                    role="status"
-                  >
+                  <p className={statusNoticeClass} role="status">
                     {analysisNotice}
                   </p>
                 )}
                 {analysisSaved && (
-                  <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                  <p className={successNoticeClass} role="status">
                     Analysis saved.
                   </p>
                 )}
@@ -534,7 +578,7 @@ export function AdminTicketDetailPage() {
                         type="button"
                         onClick={() => handleAnalysisSave(false)}
                         className={secondaryButtonClass}
-                        disabled={analysisSaving}
+                        disabled={analysisSaving || !analysisDirty}
                       >
                         Save draft
                       </button>
@@ -544,46 +588,49 @@ export function AdminTicketDetailPage() {
                       type="button"
                       onClick={() => handleAnalysisSave(false)}
                       className={primaryButtonClass}
-                      disabled={analysisSaving}
+                      disabled={analysisSaving || !analysisDirty}
                     >
                       {analysisSaving && <Spinner className="h-4 w-4" />}
-                      {analysisSaving ? "Saving…" : "Save changes"}
+                      {analysisSaving
+                        ? "Saving…"
+                        : analysisDirty
+                          ? "Save changes"
+                          : "No changes"}
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={useDraftAsReply}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-2 border border-route-300 bg-route-50 px-4 py-2.5 text-sm font-semibold text-route-700 transition-colors hover:bg-route-100 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={!analysisDraft.trim()}
                     title="Copy this text into the reply box below, ready to edit and send"
                   >
-                    Use as reply ↓
+                    Use as reply
+                    <Icon icon={ArrowDown} className="h-4 w-4" />
                   </button>
                 </div>
               </div>
             )}
-          </section>
+          </div>
+        </section>
 
           <form
             onSubmit={handleReply}
             noValidate
-            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+            className="border border-panel-200 bg-white"
           >
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 className="text-sm font-semibold text-slate-900">
-                Reply to customer
-              </h2>
-              <span className="text-xs text-slate-500">
-                Sent as <span className="font-medium text-slate-700">Support</span>
+            <div className="groove-b flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 bg-route-50 px-4 py-2">
+              <span className="legend text-route-700">
+                Human · Reply to customer
+              </span>
+              <span className="mach text-[11px] text-panel-500">
+                Sent as Support
               </span>
             </div>
-            <div className="mt-4 flex flex-col gap-4">
+            <div className="flex flex-col gap-4 p-5">
               <ErrorAlert message={replyError} />
               {replySent && (
-                <p
-                  className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-                  role="status"
-                >
+                <p className={successNoticeClass} role="status">
                   Reply sent — the customer sees it on their ticket.
                 </p>
               )}
@@ -607,7 +654,7 @@ export function AdminTicketDetailPage() {
                 <button
                   type="submit"
                   className={primaryButtonClass}
-                  disabled={replySending}
+                  disabled={replySending || !reply.trim()}
                 >
                   {replySending && <Spinner className="h-4 w-4" />}
                   {replySending ? "Sending…" : "Send reply"}
@@ -621,21 +668,20 @@ export function AdminTicketDetailPage() {
           <form
             onSubmit={handleManageSave}
             noValidate
-            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+            className="border border-panel-200 bg-white"
           >
-            <h2 className="text-sm font-semibold text-slate-900">Manage ticket</h2>
-            <div className="mt-4 flex flex-col gap-4">
+            <div className="groove-b bg-route-50 px-4 py-2">
+              <span className="legend text-route-700">Human · Manage ticket</span>
+            </div>
+            <div className="flex flex-col gap-4 p-5">
               <ErrorAlert message={mgmtError} />
               {mgmtNotice && (
-                <p
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
-                  role="status"
-                >
+                <p className={statusNoticeClass} role="status">
                   {mgmtNotice}
                 </p>
               )}
               {mgmtSaved && (
-                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                <p className={successNoticeClass} role="status">
                   Changes saved.
                 </p>
               )}
@@ -702,24 +748,26 @@ export function AdminTicketDetailPage() {
               </Field>
 
               {confirmClose && (
-                <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <HazardNotice>
                   Closing ends the conversation for this ticket. Click{" "}
                   <span className="font-semibold">Confirm close</span> to apply.
-                </p>
+                </HazardNotice>
               )}
 
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="submit"
                   className={confirmClose ? dangerButtonClass : primaryButtonClass}
-                  disabled={mgmtSaving}
+                  disabled={mgmtSaving || (!confirmClose && !mgmtDirty)}
                 >
                   {mgmtSaving && <Spinner className="h-4 w-4" />}
                   {mgmtSaving
                     ? "Saving…"
                     : confirmClose
                       ? "Confirm close"
-                      : "Save changes"}
+                      : mgmtDirty
+                        ? "Save changes"
+                        : "No changes"}
                 </button>
                 {confirmClose && !mgmtSaving && (
                   <button
@@ -734,24 +782,26 @@ export function AdminTicketDetailPage() {
             </div>
           </form>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-900">Customer</h2>
+          <div className="border border-panel-200 bg-white p-5">
+            <h2 className="legend">Customer</h2>
             <dl className="mt-3 flex flex-col gap-2.5 text-sm">
               <div>
-                <dt className="text-xs text-slate-500">Name</dt>
-                <dd className="font-medium text-slate-900">
+                <dt className="mach text-[11px] text-panel-500">Name</dt>
+                <dd className="font-semibold text-ink">
                   {ticket.customer.full_name}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-slate-500">Email</dt>
-                <dd className="break-all text-slate-700">
+                <dt className="mach text-[11px] text-panel-500">Email</dt>
+                <dd className="break-all text-panel-700">
                   {ticket.customer.email}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-slate-500">Last update</dt>
-                <dd className="text-slate-700">{formatDateTime(ticket.updated_at)}</dd>
+                <dt className="mach text-[11px] text-panel-500">Last update</dt>
+                <dd className="mach text-panel-700">
+                  {formatDateTime(ticket.updated_at)}
+                </dd>
               </div>
             </dl>
           </div>

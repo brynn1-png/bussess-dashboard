@@ -53,19 +53,22 @@ export function NewTicketPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-xl font-bold tracking-tight text-slate-900">
+      <h1 className="display text-[32px] text-ink sm:text-[40px] lg:text-[48px]">
         Submit a ticket
       </h1>
-      <p className="mt-1 text-sm text-slate-600">
+      <p className="mt-1 text-sm text-panel-600">
         Tell us what is going on — we will reply right here in the portal.
       </p>
 
       <form
         onSubmit={handleSubmit}
         noValidate
-        className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="mt-6 border border-panel-200 bg-white"
       >
-        <div className="flex flex-col gap-5">
+        <div className="groove-b bg-route-50 px-4 py-2">
+          <span className="legend text-route-700">Human · Your message</span>
+        </div>
+        <div className="flex flex-col gap-5 p-6">
           <ErrorAlert message={requestError} />
 
           <Field label="Subject" htmlFor="ticket-subject" error={fieldErrors.subject}>

@@ -4,12 +4,17 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ErrorAlert,
   Field,
+  HazardNotice,
+  Icon,
   LoadError,
   Spinner,
+  dangerButtonClass,
   inputClass,
   primaryButtonClass,
   secondaryButtonClass,
+  successNoticeClass,
 } from "../../components/ui";
+import { ArrowLeft } from "lucide-react";
 import { timeAgo } from "../../lib/format";
 import {
   ApiError,
@@ -27,9 +32,6 @@ import {
 } from "../../services/api";
 
 type Load = "loading" | "ready" | "notfound" | "error";
-
-const dangerButtonClass =
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60";
 
 const CONDITION_FIELDS: { value: WorkflowConditionField; label: string }[] = [
   { value: "status", label: "Status" },
@@ -58,10 +60,11 @@ const ACTION_LABELS: Record<WorkflowActionType, string> = {
   record_notification: "Record notification",
 };
 
+/** Run outcomes are machine records — Courier, and only failure carries a hue. */
 const RUN_STYLES: Record<WorkflowRunStatus, string> = {
-  success: "bg-emerald-100 text-emerald-800",
-  failed: "bg-red-100 text-red-800",
-  skipped: "bg-slate-100 text-slate-600",
+  success: "border-panel-300 bg-white text-panel-700",
+  failed: "border-fault-200 bg-fault-50 text-fault-700",
+  skipped: "border-panel-200 bg-panel-100 text-panel-600",
 };
 
 const MAX_CONDITIONS = 5;
@@ -116,6 +119,8 @@ export function AdminWorkflowFormPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  /** Edit mode: Save stays inert until something actually changed. */
+  const [dirty, setDirty] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -152,12 +157,14 @@ export function AdminWorkflowFormPage() {
   }, [saved]);
 
   function updateCondition(index: number, patch: Partial<WorkflowCondition>) {
+    setDirty(true);
     setConditions((prev) =>
       prev.map((condition, i) => (i === index ? { ...condition, ...patch } : condition)),
     );
   }
 
   function updateAction(index: number, patch: Partial<{ type: WorkflowActionType; value: string }>) {
+    setDirty(true);
     setActions((prev) => prev.map((action, i) => (i === index ? { ...action, ...patch } : action)));
   }
 
@@ -214,6 +221,7 @@ export function AdminWorkflowFormPage() {
         setWorkflow(updated);
         setSaved(true);
         setConfirmDelete(false);
+        setDirty(false);
       }
     } catch (err) {
       setError(
@@ -246,7 +254,7 @@ export function AdminWorkflowFormPage() {
 
   if (state === "loading") {
     return (
-      <div className="flex justify-center py-16 text-emerald-600">
+      <div className="flex justify-center py-16 text-signal-700">
         <Spinner />
       </div>
     );
@@ -254,9 +262,9 @@ export function AdminWorkflowFormPage() {
 
   if (state === "notfound") {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-12 text-center">
-        <p className="text-sm font-medium text-slate-900">Workflow not found</p>
-        <p className="mt-1 text-sm text-slate-600">
+      <div className="border border-panel-200 bg-white px-6 py-12 text-center">
+        <p className="text-sm font-medium text-ink">Workflow not found</p>
+        <p className="mt-1 text-sm text-panel-600">
           It may have been deleted, or the id is wrong.
         </p>
         <Link to="/admin/workflows" className={`mt-5 ${primaryButtonClass}`}>
@@ -278,9 +286,10 @@ export function AdminWorkflowFormPage() {
         />
         <Link
           to="/admin/workflows"
-          className="mt-4 inline-block text-sm font-medium text-emerald-700 hover:underline"
+          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-route-700 hover:underline"
         >
-          ← Back to workflows
+          <Icon icon={ArrowLeft} className="h-4 w-4" />
+          Back to workflows
         </Link>
       </div>
     );
@@ -290,17 +299,18 @@ export function AdminWorkflowFormPage() {
     <div>
       <Link
         to="/admin/workflows"
-        className="text-sm font-medium text-slate-600 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-panel-600 hover:text-ink"
       >
-        ← All workflows
+        <Icon icon={ArrowLeft} className="h-4 w-4" />
+        All workflows
       </Link>
 
       <div className="mt-4 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">
+          <h1 className="display text-[32px] text-ink sm:text-[40px] lg:text-[48px]">
             {isNew ? "New workflow" : workflow?.name}
           </h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-panel-600">
             {isNew
               ? "Runs automatically on every ticket created from now on."
               : `Created ${timeAgo(workflow?.created_at ?? "")} · trigger: ${workflow?.trigger}`}
@@ -308,10 +318,10 @@ export function AdminWorkflowFormPage() {
         </div>
         {!isNew && workflow && (
           <span
-            className={`mt-1 inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            className={`mt-1 inline-flex shrink-0 items-center border px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${
               workflow.is_active
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-slate-100 text-slate-600"
+                ? "border-route-200 bg-route-50 text-route-700"
+                : "border-panel-200 bg-panel-100 text-panel-600"
             }`}
           >
             {workflow.is_active ? "Active" : "Paused"}
@@ -322,13 +332,13 @@ export function AdminWorkflowFormPage() {
       <form onSubmit={handleSave} noValidate className="mt-6 flex flex-col gap-6">
         <ErrorAlert message={error} />
         {saved && (
-          <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <p className={successNoticeClass} role="status">
             Workflow saved.
           </p>
         )}
 
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">Basics</h2>
+        <section className="border border-panel-200 bg-white p-5 shadow-sm">
+          <h2 className="legend">Basics</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Field label="Name" htmlFor="workflow-name">
               <input
@@ -336,7 +346,10 @@ export function AdminWorkflowFormPage() {
                 type="text"
                 className={inputClass}
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setDirty(true);
+                }}
                 maxLength={120}
                 placeholder="e.g. Escalate urgent billing issues"
               />
@@ -350,7 +363,10 @@ export function AdminWorkflowFormPage() {
                 id="workflow-active"
                 className={inputClass}
                 value={isActive ? "active" : "paused"}
-                onChange={(e) => setIsActive(e.target.value === "active")}
+                onChange={(e) => {
+                  setIsActive(e.target.value === "active");
+                  setDirty(true);
+                }}
               >
                 <option value="active">Active — runs on new tickets</option>
                 <option value="paused">Paused — does not run</option>
@@ -359,11 +375,11 @@ export function AdminWorkflowFormPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="border border-panel-200 bg-white p-5 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-slate-900">When</h2>
-              <p className="mt-1 text-xs text-slate-500">
+              <h2 className="legend">When</h2>
+              <p className="mt-1 text-xs text-panel-500">
                 Trigger: a ticket is created (the only trigger in this version).
                 All conditions must match — no conditions means “every
                 ticket”.
@@ -386,7 +402,7 @@ export function AdminWorkflowFormPage() {
           </div>
 
           {conditions.length === 0 ? (
-            <p className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <p className="mt-4 border border-dashed border-panel-300 bg-panel-50 px-4 py-3 text-sm text-panel-600">
               No conditions — this workflow runs on every new ticket.
             </p>
           ) : (
@@ -395,7 +411,7 @@ export function AdminWorkflowFormPage() {
                 const options = CONDITION_OPTIONS[condition.field];
                 return (
                   <li key={index} className="flex flex-wrap items-end gap-2">
-                    <span className="pb-2.5 text-xs font-medium text-slate-500">
+                    <span className="pb-2.5 text-xs font-medium text-panel-500">
                       {index === 0 ? "If" : "and"}
                     </span>
                     <div className="w-36">
@@ -448,10 +464,12 @@ export function AdminWorkflowFormPage() {
                     )}
                     <button
                       type="button"
-                      onClick={() =>
-                        setConditions((prev) => prev.filter((_, i) => i !== index))
-                      }
-                      className="pb-2.5 text-sm font-medium text-slate-500 hover:text-red-600"
+                      aria-label={`Remove condition ${index + 1}`}
+                      onClick={() => {
+                        setDirty(true);
+                        setConditions((prev) => prev.filter((_, i) => i !== index));
+                      }}
+                      className="pb-2.5 text-sm font-medium text-panel-500 hover:text-fault-600"
                     >
                       Remove
                     </button>
@@ -462,11 +480,11 @@ export function AdminWorkflowFormPage() {
           )}
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="border border-panel-200 bg-white p-5 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-slate-900">Then</h2>
-              <p className="mt-1 text-xs text-slate-500">
+              <h2 className="legend">Then</h2>
+              <p className="mt-1 text-xs text-panel-500">
                 Actions run in order. Templates may use {"{customer}"} and{" "}
                 {"{subject}"}. If an action fails, the whole run is marked
                 failed and its changes are rolled back.
@@ -489,14 +507,14 @@ export function AdminWorkflowFormPage() {
           </div>
 
           {actions.length === 0 ? (
-            <p className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <p className="mt-4 border border-dashed border-panel-300 bg-panel-50 px-4 py-3 text-sm text-panel-600">
               No actions yet — add at least one.
             </p>
           ) : (
             <ul className="mt-4 flex flex-col gap-4">
               {actions.map((action, index) => (
                 <li key={index} className="flex flex-wrap items-end gap-2">
-                  <span className="pb-2.5 text-xs font-medium text-slate-500">
+                  <span className="pb-2.5 text-xs font-medium text-panel-500">
                     {index + 1}.
                   </span>
                   <div className="w-56">
@@ -583,8 +601,12 @@ export function AdminWorkflowFormPage() {
 
                   <button
                     type="button"
-                    onClick={() => setActions((prev) => prev.filter((_, i) => i !== index))}
-                    className="pb-2.5 text-sm font-medium text-slate-500 hover:text-red-600"
+                    aria-label={`Remove action ${index + 1}`}
+                    onClick={() => {
+                      setDirty(true);
+                      setActions((prev) => prev.filter((_, i) => i !== index));
+                    }}
+                    className="pb-2.5 text-sm font-medium text-panel-500 hover:text-fault-600"
                   >
                     Remove
                   </button>
@@ -595,9 +617,19 @@ export function AdminWorkflowFormPage() {
         </section>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button type="submit" className={primaryButtonClass} disabled={saving}>
+          <button
+            type="submit"
+            className={primaryButtonClass}
+            disabled={saving || (!isNew && !dirty)}
+          >
             {saving && <Spinner className="h-4 w-4" />}
-            {saving ? "Saving…" : isNew ? "Create workflow" : "Save changes"}
+            {saving
+              ? "Saving…"
+              : isNew
+                ? "Create workflow"
+                : dirty
+                  ? "Save changes"
+                  : "No changes"}
           </button>
           <Link to="/admin/workflows" className={secondaryButtonClass}>
             Cancel
@@ -608,38 +640,38 @@ export function AdminWorkflowFormPage() {
       {!isNew && workflow && (
         <>
           <section className="mt-8">
-            <h2 className="text-sm font-semibold text-slate-900">Recent runs</h2>
+            <h2 className="legend">Recent runs</h2>
             {runs.length === 0 ? (
-              <p className="mt-3 rounded-xl border border-dashed border-slate-300 bg-white px-6 py-8 text-center text-sm text-slate-600">
+              <p className="mt-3 border border-dashed border-panel-300 bg-white px-6 py-8 text-center text-sm text-panel-600">
                 No runs yet — create a ticket to trigger this workflow.
               </p>
             ) : (
               <ul className="mt-3 flex flex-col gap-2.5">
                 {runs.map((run) => (
-                  <li key={run.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <li key={run.id} className="border border-panel-200 bg-white p-4 shadow-sm">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-2.5">
                         <span
-                          className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${RUN_STYLES[run.status]}`}
+                          className={`inline-flex shrink-0 items-center border px-1.5 py-0.5 font-mono text-[11px] capitalize ${RUN_STYLES[run.status]}`}
                         >
                           {run.status}
                         </span>
-                        <p className="min-w-0 truncate text-sm text-slate-700">
+                        <p className="min-w-0 truncate text-sm text-panel-700">
                           {runSummary(run)}
                         </p>
                       </div>
                       <span
-                        className="shrink-0 text-xs text-slate-400 tabular-nums"
+                        className="mach shrink-0 text-[11px] text-panel-500"
                         title={run.created_at}
                       >
                         {timeAgo(run.created_at)}
                       </span>
                     </div>
                     <details className="mt-2">
-                      <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-700">
+                      <summary className="cursor-pointer text-xs font-medium text-panel-500 hover:text-panel-700">
                         Details
                       </summary>
-                      <pre className="mt-2 overflow-x-auto rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+                      <pre className="mach mt-2 overflow-x-auto border border-panel-200 bg-panel-50 p-3 text-[11px] leading-5 text-panel-600">
                         {JSON.stringify(run.details, null, 2)}
                       </pre>
                     </details>
@@ -649,25 +681,24 @@ export function AdminWorkflowFormPage() {
             )}
           </section>
 
-          <section className="mt-8 rounded-xl border border-red-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-red-700">Danger zone</h2>
-            <p className="mt-1 text-xs text-slate-500">
+          <section className="mt-8 border border-fault-200 bg-white p-5">
+            <h2 className="legend text-fault-700">Danger zone</h2>
+            <p className="mt-1 text-xs text-panel-500">
               Deleting removes the workflow and its run history. Tickets it
               already touched are not changed.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               {confirmDelete && !deleting && (
-                <p
-                  className="w-full rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-                  role="alert"
-                >
-                  This permanently removes <strong>{workflow.name}</strong> and
-                  its {runs.length} recorded run{runs.length === 1 ? "" : "s"}.
-                  Tickets it already changed keep their tags and priority.
-                  <span className="mt-1 block font-semibold">
-                    There is no undo — click Confirm delete to apply.
-                  </span>
-                </p>
+                <div className="w-full">
+                  <HazardNotice>
+                    This permanently removes <strong>{workflow.name}</strong> and
+                    its {runs.length} recorded run{runs.length === 1 ? "" : "s"}.
+                    Tickets it already changed keep their tags and priority.
+                    <span className="mt-1 block font-semibold">
+                      There is no undo — click Confirm delete to apply.
+                    </span>
+                  </HazardNotice>
+                </div>
               )}
               <button
                 type="button"

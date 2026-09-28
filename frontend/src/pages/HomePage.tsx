@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
+  Icon,
   Spinner,
   primaryButtonClass,
   secondaryButtonClass,
 } from "../components/ui";
+import { Check } from "lucide-react";
 import { useAuth } from "../features/auth/auth-context";
 import { getHealth } from "../services/api";
 
@@ -23,21 +25,22 @@ export function HomePage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-6 p-6 text-center">
-      <h1 className="text-3xl font-bold tracking-tight">
+      <p className="legend">Support desk · AI triage · Workflows</p>
+      <h1 className="display text-[34px] sm:text-[46px]">
         AI Business Automation Platform
       </h1>
-      <p className="max-w-lg text-slate-600">
+      <p className="max-w-lg text-panel-600">
         Support tickets, AI-assisted replies, and business workflows — one
         dashboard for your team and your customers.
       </p>
 
       <div
-        className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium ${
+        className={`inline-flex items-center gap-2 border px-3 py-1.5 font-mono text-xs ${
           status === "ready"
-            ? "bg-emerald-100 text-emerald-800"
+            ? "border-route-200 bg-route-50 text-route-700"
             : status === "error"
-              ? "bg-red-100 text-red-800"
-              : "bg-slate-200 text-slate-600"
+              ? "border-fault-200 bg-fault-50 text-fault-700"
+              : "border-panel-200 bg-white text-panel-600"
         }`}
         role="status"
       >
@@ -47,7 +50,12 @@ export function HomePage() {
             Checking backend…
           </>
         )}
-        {status === "ready" && "Backend: connected ✓"}
+        {status === "ready" && (
+          <>
+            <Icon icon={Check} className="h-3.5 w-3.5" />
+            Backend: connected
+          </>
+        )}
         {status === "error" && "Backend: unreachable"}
       </div>
 

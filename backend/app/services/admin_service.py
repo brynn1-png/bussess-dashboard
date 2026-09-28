@@ -184,6 +184,7 @@ def ticket_detail(db: Session, ticket_id: int) -> dict[str, Any]:
             "summary": analysis.summary,
             "suggested_response": analysis.suggested_response,
             "is_human_confirmed": analysis.is_human_confirmed,
+            "confirmed_by": analysis.confirmed_by,
             "provider": analysis.provider,
             "error_message": analysis.error_message,
             "created_at": analysis.created_at,
@@ -258,7 +259,11 @@ def add_message(db: Session, ticket_id: int, content: str) -> TicketMessage:
 
 
 def update_analysis(
-    db: Session, ticket_id: int, payload: UpdateAnalysisRequest
+    db: Session,
+    ticket_id: int,
+    payload: UpdateAnalysisRequest,
+    *,
+    confirmed_by: str | None = None,
 ) -> AIAnalysis:
     ticket = db.get(Ticket, ticket_id)
     if ticket is None:
@@ -270,6 +275,8 @@ def update_analysis(
         analysis.suggested_response = payload.suggested_response.strip()
     if payload.is_human_confirmed is not None:
         analysis.is_human_confirmed = payload.is_human_confirmed
+        # The band stamps a signer only while it is sealed.
+        analysis.confirmed_by = confirmed_by if payload.is_human_confirmed else None
     db.commit()
     db.refresh(analysis)
     return analysis

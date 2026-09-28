@@ -117,7 +117,9 @@ def update_analysis(
 ) -> AnalysisResponse:
     _require_fields(payload)
     try:
-        analysis = admin_service.update_analysis(db, ticket_id, payload)
+        analysis = admin_service.update_analysis(
+            db, ticket_id, payload, confirmed_by=user.full_name
+        )
     except admin_service.NotFoundError as exc:
         raise _map_error(exc)
     return AnalysisResponse.model_validate(analysis)

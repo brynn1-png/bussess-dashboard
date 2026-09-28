@@ -34,6 +34,8 @@ class AIAnalysis(Base):
     is_human_confirmed: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )
+    # Who sealed it, so the band can stamp their initials (surface brief STORY).
+    confirmed_by: Mapped[str | None] = mapped_column(String(120))
     provider: Mapped[str | None] = mapped_column(String(50))
     error_message: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(

@@ -25,3 +25,15 @@ export function formatDateTime(iso: string): string {
     minute: "2-digit",
   });
 }
+
+/**
+ * Stamp-ready initials for a signer: "Demo Administrator" → "DA".
+ * Empty string when there is no recorded signer — the seal band then shows
+ * the timestamp alone rather than inventing a name.
+ */
+export function initialsOf(fullName: string | null | undefined): string {
+  const parts = (fullName ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  const last = parts.length > 1 ? parts[parts.length - 1] : "";
+  return `${parts[0][0]}${last[0] ?? ""}`.toUpperCase();
+}

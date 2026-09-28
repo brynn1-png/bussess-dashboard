@@ -1,17 +1,242 @@
 @import "tailwindcss";
 
-/* Browser surfaces themed to the palette: selection, caret, keyboard focus. */
-::selection {
-  background: #a7f3d0; /* emerald-200 */
-  color: #064e3b; /* emerald-900 */
+/*
+  Visual world: pneumatic-tube dispatch desk.
+  One aluminium ground, engraved grooves instead of floating cards,
+  and a closed palette law — every hue has exactly one meaning:
+    route  = active on the line / needs a human (incl. primary action, focus, REVIEW)
+    signal = a machine still has it
+    fault  = failed, destructive, or adverse
+    hazard = blocked / disabled
+    ink    = settled by a signature
+    panel  = idle, archived, none
+  Priority is never a hue: it is a count of signal bands.
+*/
+
+@theme {
+  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Courier Prime", ui-monospace, "Courier New", monospace;
+
+  /* Aluminium ground + neutral plate ramp */
+  --color-ground: #e6e9ec;
+  --color-panel-50: #f7f8f9;
+  --color-panel-100: #eceef0;
+  --color-panel-200: #dfe2e5;
+  --color-panel-300: #c7cbd0;
+  --color-panel-400: #9aa0a7;
+  /* 4.85:1 on the aluminium ground — meta text sits on the ground, not on white. */
+  --color-panel-500: #5e656c;
+  --color-panel-600: #50565c;
+  --color-panel-700: #3a3f45;
+  --color-panel-800: #272b30;
+  --color-panel-900: #15181b;
+  --color-panel-950: #0b0d0f;
+
+  /* Routing blue — the line and everything the line asks of a human */
+  --color-route-50: #eef1ff;
+  --color-route-100: #dee3ff;
+  --color-route-200: #c0c9ff;
+  --color-route-300: #94a3ff;
+  --color-route-400: #6376ff;
+  --color-route-500: #3350f0;
+  --color-route-600: #1b3ae0;
+  --color-route-700: #142ca8;
+  --color-route-800: #111f78;
+
+  /* Signal amber — a machine still has it */
+  --color-signal-50: #fff7e6;
+  --color-signal-100: #ffebc4;
+  --color-signal-200: #ffd98a;
+  --color-signal-500: #eda200;
+  --color-signal-600: #d28a00;
+  --color-signal-700: #a86a00;
+  --color-signal-800: #7a4e00;
+
+  /* Fault red — failed, destructive, adverse */
+  --color-fault-50: #fef2f2;
+  --color-fault-100: #fde3e3;
+  --color-fault-200: #fac7c7;
+  --color-fault-500: #dc2626;
+  --color-fault-600: #c81e1e;
+  --color-fault-700: #9f1717;
+  --color-fault-800: #7a1111;
+
+  /* Hazard yellow — blocked / disabled */
+  --color-hazard-100: #fff3b0;
+  --color-hazard-300: #ffdf56;
+  --color-hazard-400: #ffd000;
+
+  /* Ink — settled by a signature */
+  --color-ink: #15181b;
+  --color-ink-soft: #2a2f35;
+
+  /* Plates, not pills: engraved corners */
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.125rem;
+  --radius-lg: 0.1875rem;
+  --radius-xl: 0.1875rem;
+  --radius-2xl: 0.25rem;
+  --radius-3xl: 0.25rem;
+
+  /* Offset + soft blur only; no zero-offset halos */
+  --shadow-plate: 0 1px 2px rgb(21 24 27 / 0.1), 0 10px 24px -14px rgb(21 24 27 / 0.4);
+  --shadow-raised: 0 2px 4px rgb(21 24 27 / 0.12), 0 18px 34px -18px rgb(21 24 27 / 0.5);
+
+  /* Ink-tinted defaults so every default shadow in the system is one voice. */
+  --shadow-xs: 0 1px 2px rgb(21 24 27 / 0.07);
+  --shadow-sm: 0 1px 2px rgb(21 24 27 / 0.08), 0 1px 3px rgb(21 24 27 / 0.06);
+  --shadow-md: 0 2px 4px rgb(21 24 27 / 0.08), 0 8px 18px -10px rgb(21 24 27 / 0.28);
+  --shadow-lg: 0 4px 8px rgb(21 24 27 / 0.08), 0 20px 38px -18px rgb(21 24 27 / 0.4);
+  --shadow-xl: 0 6px 12px rgb(21 24 27 / 0.1), 0 30px 60px -28px rgb(21 24 27 / 0.5);
 }
 
-:focus-visible {
-  outline: 2px solid #059669; /* emerald-600 */
-  outline-offset: 2px;
+@layer base {
+  /* Browser surfaces carry the design too. */
+  ::selection {
+    background: var(--color-route-200);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-route-600);
+    outline-offset: 2px;
+  }
+
+  input,
+  textarea,
+  select {
+    caret-color: var(--color-route-600);
+  }
+
+  * {
+    scrollbar-color: var(--color-panel-300) transparent;
+    scrollbar-width: thin;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-panel-100);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-panel-300);
+    border: 2px solid var(--color-panel-100);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-panel-400);
+  }
+
+  ::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+  }
+
+  html {
+    background: var(--color-ground);
+  }
 }
 
-input,
-textarea {
-  caret-color: #059669;
+@layer components {
+  /* Engraved station legend: condensed caps cut into the panel. */
+  .legend {
+    font-stretch: 72%;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    color: var(--color-panel-600);
+  }
+
+  /* The display voice: Archivo at full weight, set tight. */
+  .display {
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 0.95;
+  }
+
+  /* Machine-printed matter only — provenance carried by the face itself. */
+  .mach {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Recessed channel: dark lip with a light highlight beneath it. */
+  .groove-b {
+    border-bottom: 1px solid rgb(21 24 27 / 0.16);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.85);
+  }
+
+  .groove-t {
+    border-top: 1px solid rgb(21 24 27 / 0.16);
+    box-shadow: 0 -1px 0 rgb(255 255 255 / 0.85) inset;
+  }
+
+  .groove-r {
+    border-right: 1px solid rgb(21 24 27 / 0.16);
+    box-shadow: 1px 0 0 rgb(255 255 255 / 0.85);
+  }
+
+  /* Blocked / disabled: the one place the hazard diagonal is legal. */
+  .hazard-band {
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--color-ink) 0 7px,
+      var(--color-hazard-400) 7px 14px
+    );
+  }
+
+  /* The continuous line the carriers travel on. */
+  .track {
+    background: linear-gradient(
+      to bottom,
+      rgb(21 24 27 / 0.3),
+      rgb(21 24 27 / 0.14) 45%,
+      rgb(255 255 255 / 0.9)
+    );
+  }
+
+  /* THE authored moment: an ink band struck across machine output when a human
+     signs off. One wipe, once, on mount — nothing else in the system moves
+     like this. */
+  .seal-band {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .seal-band::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--color-ink);
+    transform: scaleX(0);
+    transform-origin: left center;
+    animation: seal-strike 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .seal-band > * {
+    position: relative;
+  }
+
+  @keyframes seal-strike {
+    to {
+      transform: scaleX(1);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

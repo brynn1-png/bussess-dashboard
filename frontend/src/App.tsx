@@ -22,7 +22,7 @@ import { TicketListPage } from "./pages/portal/TicketListPage";
 export default function App() {
   return (
     <AuthProvider>
-      <main className="min-h-screen bg-slate-50 text-slate-900">
+      <main className="min-h-screen bg-ground text-ink">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />

@@ -20,8 +20,8 @@ export function Protected({
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <Spinner className="h-6 w-6 text-emerald-600" />
+      <div className="flex min-h-screen items-center justify-center bg-ground">
+        <Spinner className="h-6 w-6 text-signal-700" />
       </div>
     );
   }
@@ -32,14 +32,14 @@ export function Protected({
     const areaLabel =
       role === "admin" ? "administrator" : "customer";
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-        <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-          <p className="text-sm font-semibold text-slate-900">
+      <div className="flex min-h-screen items-center justify-center bg-ground px-4">
+        <div className="w-full max-w-md border border-panel-200 bg-white p-6 text-center shadow-sm">
+          <p className="text-sm font-semibold text-ink">
             This area is for {areaLabel} accounts
           </p>
-          <p className="mt-1.5 text-sm text-slate-600">
+          <p className="mt-1.5 text-sm text-panel-600">
             You are signed in as{" "}
-            <span className="font-medium text-slate-900">{user.email}</span>.
+            <span className="font-medium text-ink">{user.email}</span>.
           </p>
           <Link to={homePath(user.role)} className={`mt-5 ${primaryButtonClass}`}>
             Go to my dashboard
