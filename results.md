@@ -7,7 +7,7 @@
 - M3 (TASK-004) **verified** 2026-09-28: pytest 36/36, lint+build clean, live analysis e2e 11/11 on Supabase → Completed (committed `1c66b85`).
 - M4 (TASK-005) **verified & completed** 2026-09-28: pytest 47/47, lint+build clean, detector `[]`, live admin e2e 36/36 on Supabase, user walkthrough confirmed → Completed (committed `46d182e`).
 - M5 (TASK-006) **verified & completed** 2026-09-28: pytest 59/59, lint+build clean, detector `[]`, migration `c633bb4d64f4` on Supabase, live workflow e2e 34/34, user walkthrough confirmed → Completed (committed `3570f8d`, pushed).
-- M6 (TASK-007) **implemented & automated-verified** 2026-09-28: pytest 72/72 + 1 skip (live Ollama), lint+build clean, detector `[]`, migration `4a2a875fb9dc` on Supabase, live seed→remove real-data-survival check, README + architecture sync — **follow-up: Ollama cloud endpoint adopted (`https://ollama.com`, `gpt-oss:20b`), live test now runs (73 passed, 0 skipped), live e2e with the real cloud model PASSED**; pending user e2e walkthrough + screenshots.
+- M6 (TASK-007) **verified & completed 2026-09-28**: pytest 73/73 (0 skipped — live Ollama test now runs against the cloud), lint+build clean, detector `[]`, migration `4a2a875fb9dc` on Supabase, live seed→remove real-data-survival check, README + architecture sync, **Ollama cloud live e2e passed** (`provider=ollama`), **user walkthrough confirmed** → committed `136332b` (pushed). **Project handoff-ready: M0–M6 all complete.**
 - Full details in the Result Log below.
 
 ---
@@ -15,6 +15,13 @@
 ## Result Log
 
 <!-- Format: date, outcome, verification performed, effects -->
+
+### 2026-09-28 — M6 close-out (session 9)
+
+- **Outcome:** M6 exit criteria met. Demo seed loaded on Supabase and verified by SQL (5 demo users + 1 real admin, 12 demo tickets + 1 real ticket, 12 analyses, 3 workflows / 27 runs across all three run states); user performed the full e2e walkthrough against the running backend (`AI_PROVIDER=ollama`) and frontend and **confirmed it works**. TASK-007 → **Completed**, M6 → **Complete**, `PLAN.md` annotated. User committed everything as **`136332b`** (20 files) and pushed.
+- **Verification performed:** seed row counts + coverage spread via direct SQL on Supabase · backend `/api/health` → `ok` (PID 1644) + frontend :5173 responding · post-commit secrets scan (API key absent from tracked files; `backend/.env` never in history) · `git status` clean and `master` in sync with `origin/master`.
+- **Effects:** **project handoff-ready — all milestones M0–M6 complete.**
+- **Risks/notes:** commit message `commit m5` actually contains M6 (already pushed → rewriting history not worth it); the Ollama API key appeared once in a session-shell output (`.env` is gitignored, never committed) → **user advised to rotate it**; demo data remains loaded (removable in one command); README screenshots still placeholders.
 
 ### 2026-09-28 — M6 follow-up: Ollama cloud live provider (session 8)
 

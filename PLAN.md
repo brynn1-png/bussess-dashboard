@@ -133,6 +133,8 @@ Each milestone is complete only when its verification passes. Milestones are ord
 
 ### M6 — Demo Data + Polish + Handoff
 
+**Status:** ✅ **Complete 2026-09-28** (TASK-007 Completed; commit `136332b`; seed removable on Supabase, live Ollama check passed on the cloud endpoint, user walkthrough confirmed)
+
 **Deliverables**
 - Seed script: fictional business, customers, tickets across all categories/priorities/sentiments, workflow runs — tagged (`is_demo`) or in isolated seed so it's removable without touching other data
 - UX polish pass (empty states, error states, responsive check)

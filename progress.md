@@ -2,10 +2,11 @@
 
 ## Current State Summary
 
-- **M0 COMPLETE** (`95fdc1d`); **M1 COMPLETE** (`9253b4c` + migration `7d4a1330581a` on Supabase, TASK-002 Completed); **M2 COMPLETE** (TASK-003 Completed — user walkthrough confirmed; committed through `a0ce746`); **M3 COMPLETE** (TASK-004 Completed, committed as `1c66b85`); **M4 COMPLETE** (TASK-005 Completed — user walkthrough confirmed 2026-09-28, committed as `46d182e`); **M5 COMPLETE** (TASK-006 Completed — walkthrough confirmed, committed as `3570f8d` and **pushed to origin/master**): workflow engine + analytics (details in session 6). M6 (TASK-007) implemented 2026-09-28 — seed CLI + Ollama provider + polish + README/architecture sync, verified (pytest 72 + 1 skip, lint/build/detector clean, live seed→remove data-survival check).
+- **M0 COMPLETE** (`95fdc1d`); **M1 COMPLETE** (`9253b4c` + migration `7d4a1330581a` on Supabase, TASK-002 Completed); **M2 COMPLETE** (TASK-003 Completed — user walkthrough confirmed; committed through `a0ce746`); **M3 COMPLETE** (TASK-004 Completed, committed as `1c66b85`); **M4 COMPLETE** (TASK-005 Completed — user walkthrough confirmed 2026-09-28, committed as `46d182e`); **M5 COMPLETE** (TASK-006 Completed — walkthrough confirmed, committed as `3570f8d` and **pushed to origin/master**): workflow engine + analytics. **M6 COMPLETE / PROJECT HANDOFF-READY** (TASK-007 Completed 2026-09-28, commit `136332b`): seed CLI + Ollama provider + polish + README/architecture sync + **Ollama cloud live check passed**; pytest 73 passed / 0 skipped; user walkthrough confirmed.
 - Supabase reachable via **session pooler** (`aws-0-ap-southeast-1.pooler.supabase.com:5432`, username `postgres.<project-ref>`) — direct `db.` host is IPv6-only (see `decisions.md`).
-- ⏳ Pending (M6 exit): (1) user e2e walkthrough with demo data, ~~(2) live `AI_PROVIDER=ollama` check~~ **DONE 2026-09-28 — Ollama cloud, `gpt-oss:20b`, live e2e passed**, (3) optional README screenshots (user-captured), (4) user commit of M6 files.
-- Next actions: user walkthrough of TASK-007 → Completed → M6 commit → project handoff (PLAN exit).
+- **AI provider live:** Ollama **cloud** (`https://ollama.com`, `gpt-oss:20b`) via `AI_PROVIDER=ollama` in `backend/.env`; `mock` remains the code default. Demo seed currently **loaded** (removable with `python -m app.cli.seed_demo --remove`).
+- ⏳ Optional leftovers: README screenshots (user-captured), history tidy-up (`136332b` message says "commit m5" but contains M6 — amend only if not yet pushed... it **is** pushed, so leave it), rotating the Ollama API key that appeared in a session transcript.
+- Next: handoff — no milestones remain.
 
 ---
 
@@ -108,3 +109,11 @@
 - **Bug found & fixed (test safety):** after `AI_PROVIDER=ollama` entered `backend/.env`, the suite silently started calling the real model — `test_submission_runs_mock_analysis_and_writes_back` failed and runtime jumped 22s → 235s. Root cause: `conftest.py` forced `DATABASE_URL` but not `AI_PROVIDER`. Fix: `os.environ["AI_PROVIDER"] = "mock"` unconditionally in `tests/conftest.py` (same pattern as the DB fix); the live Ollama test builds its own provider and is unaffected. Re-run → **73 passed in 21s**.
 - **En route issues:** a zombie uvicorn (orphaned reload child) held port 8000 serving pre-cloud config → killed; first e2e attempt hit 422 (`message`, not `description` — schema field name); a temporary script named `inspect.py` shadowed the stdlib module (renamed); one leftover e2e user from the 422 attempt was found and deleted in cleanup.
 - Status: TASK-007 still **Verification** — remaining: user walkthrough + screenshots + M6 commit.
+
+### 2026-09-28 (session 9 — M6 close-out, project handoff)
+
+- Demo data seeded live on Supabase (`python -m app.cli.seed_demo`): 6 users (your admin + 5 demo), 13 tickets (12 demo + your 1), 12 analyses (all `mock`/`COMPLETED` by design — the seed forces the mock for determinism), 3 workflows / 27 runs covering `success` + `skipped` + `failed`. Counts verified by direct SQL against Supabase; the printed `Workflow 8 failed ... ValueError` line is the intentional broken-workflow demo.
+- Servers confirmed up (backend `AI_PROVIDER=ollama`, frontend :5173); user ran the walkthrough checklist → **confirmed working**.
+- **TASK-007 → Completed**; **M6 → Complete**; `PLAN.md` M6 status annotated.
+- User committed M6 as **`136332b`** (20 files, +1665/−214), already **pushed** to `origin/master`; post-commit secrets scan clean (API key absent from all tracked files, `backend/.env` never in history).
+- Status: **project handoff-ready — no milestones remain.** Optional leftovers: README screenshots, API-key rotation (a config dump echoed it into a session transcript), demo data left loaded (remove with `python -m app.cli.seed_demo --remove`).

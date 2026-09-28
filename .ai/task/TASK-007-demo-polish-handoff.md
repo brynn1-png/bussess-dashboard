@@ -1,6 +1,6 @@
 # TASK-007: Demo Data + Polish + Handoff (M6)
 
-**Status:** Verification — implementation complete + automated-verified 2026-09-28; pending user e2e walkthrough, Ollama live check (install required), and user commit
+**Status:** Completed — 2026-09-28. User e2e walkthrough confirmed; live Ollama check passed (**Ollama cloud**, see §11); pytest 73 passed / 0 skipped; committed (`136332b`)
 **Milestone:** M6 (PLAN §3, final milestone)
 **Created:** 2026-09-28
 **Depends on:** TASK-002 … TASK-006 (M0–M5 complete)
@@ -10,7 +10,7 @@
 ## 1. Objective
 
 Ship the project's final milestone: a **removable demo dataset** that makes the
-product self-explanatory, a **real local AI provider (Ollama)** behind the
+product self-explanatory, a **real AI provider (Ollama)** behind the
 existing abstraction, a **UX polish pass**, and the **handoff artifacts**
 (portfolio README + architecture doc synced to reality).
 
@@ -84,14 +84,15 @@ pre-M4/pre-M5 system (e.g. it sketches `/api/workflows`, which reality moved to
       untouched** (asserted by test); one command, per PLAN — live check:
       before/after counts identical (1 user / 1 ticket / 0 workflows)
 - [x] Re-running `seed_demo` with demo data present → clear error, no duplicates
-- [ ] `AI_PROVIDER=ollama` → live analysis works end-to-end (when Ollama is
-      running); provider failure paths → `failed`, ticket intact
-      — *failure paths verified by tests; live pass pending Ollama install
-      (not yet on the user's machine; test skips cleanly: 1 skipped)*
-- [ ] Full e2e walkthrough (PLAN): signup → submit ticket → AI analysis →
-      admin review → workflow run → analytics (with demo data loaded)
-- [x] `pytest` green (new seed/provider tests + all 59 existing) — **72 passed,
-      1 skipped** (skip = live Ollama)
+- [x] `AI_PROVIDER=ollama` → live analysis works end-to-end — **passed 2026-09-28
+      against Ollama cloud** (`gpt-oss:20b`, analysis `completed` with
+      `provider=ollama` + ticket write-back); provider failure paths →
+      `failed`, ticket intact (verified by tests)
+- [x] Full e2e walkthrough (PLAN): signup → submit ticket → AI analysis →
+      admin review → workflow run → analytics (with demo data loaded) —
+      **user confirmed 2026-09-28**
+- [x] `pytest` green (new seed/provider tests + all 59 existing) — **73 passed,
+      0 skipped** (live Ollama test now runs against the cloud)
 - [x] `npm run lint` + `npm run build` + `impeccable detect` clean
 - [x] README complete; `.ai/architecture.md` reflects the built system
 
@@ -138,10 +139,9 @@ later), screenshot capture by the assistant.
 
 ## 8. Dependencies
 
-- **Ollama installed locally + a model pulled** (user machine, e.g.
-  `ollama pull llama3.2`) — only needed for live/real analysis; everything
-  else works without it. Spec assumes the default model name is documented in
-  `.env.example` and overridable via `OLLAMA_MODEL`.
+- **An Ollama endpoint** — Ollama cloud API key (chosen 2026-09-28) *or* a local
+  install + pulled model; only needed for live/real analysis, everything else
+  works without it. Model overridable via `OLLAMA_MODEL`.
 - Supabase `.env` (existing), browser for the user's walkthrough, user-captured
   screenshots for the README.
 
@@ -164,17 +164,25 @@ later), screenshot capture by the assistant.
       **72 passed, 1 skipped** (2026-09-28)
 - [x] Seed on empty DB → counts + coverage assertions; `--remove` → clean;
       real-data-survival test passes — plus live Supabase run: before == after
-- [ ] Ollama live check passes when running / skips cleanly when not —
-      *skip path verified; passes-when-running pending Ollama installation*
+- [x] Ollama live check passes when running / skips cleanly when not —
+      **passes 2026-09-28 (Ollama cloud); skip path retained for a missing
+      endpoint/key**
 - [x] `npm run lint` + `npm run build` + `impeccable detect` → clean
-- [ ] Full e2e walkthrough with demo data (user) per PLAN M6
+- [x] Full e2e walkthrough with demo data (user) per PLAN M6 — **confirmed
+      2026-09-28**
 - [x] README + architecture update reviewed; no secrets tracked; logs updated
 
 ## 11. Notes
 
-- **D2 resolved 2026-09-28:** provider = **Ollama** (open-source, local, no
-  committed keys); `mock` stays the default for tests/demos — PLAN's decision
-  point is closed and the decisions table gets updated.
+- **D2 resolved 2026-09-28:** provider = **Ollama**; `mock` stays the default
+  for tests/demos — PLAN's decision point is closed and the decisions table
+  gets updated.
+- **Endpoint revised 2026-09-28 (user decision): Ollama cloud**, not a local
+  install — `OLLAMA_BASE_URL=https://ollama.com`, `OLLAMA_MODEL=gpt-oss:20b`
+  (free-plan starter allowance), key in `.env` only. No code change was needed;
+  the local install remains a config-only alternative. A local model closes the
+  provider decision with no committed keys and no cost — cloud was chosen
+  instead so nothing has to be installed on the machine.
 - **`is_demo` chosen** over a naming namespace (explicit, PLAN-literal).
 - Seed invents its own fictional business; it never modifies or removes rows it
   didn't create (flag-enforced).
