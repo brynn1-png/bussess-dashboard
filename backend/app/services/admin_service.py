@@ -11,8 +11,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.ai_analysis import AIAnalysis
-from app.models.enums import AnalysisStatus, TicketPriority, TicketStatus
-from app.models.ticket import Ticket
+from app.models.enums import AnalysisStatus, MessageSender, TicketPriority, TicketStatus
+from app.models.ticket import Ticket, TicketMessage
 from app.models.user import Customer, User
 from app.schemas.admin import UpdateAnalysisRequest, UpdateTicketRequest
 
@@ -28,7 +28,11 @@ class NotFoundError(Exception):
     """Unknown ticket (or its analysis) in an admin operation → 404."""
 
 
-def _ticket_summary(ticket: Ticket, customer_name: str) -> dict[str, Any]:
+def _ticket_summary(
+    ticket: Ticket,
+    customer_name: str,
+    analysis: AIAnalysis | None = None,
+) -> dict[str, Any]:
     return {
         "id": ticket.id,
         "subject": ticket.subject,
@@ -38,6 +42,9 @@ def _ticket_summary(ticket: Ticket, customer_name: str) -> dict[str, Any]:
         "customer_name": customer_name,
         "created_at": ticket.created_at,
         "updated_at": ticket.updated_at,
+        # AI review state (M6 triage queue); None when the ticket has no analysis row.
+        "analysis_status": analysis.status if analysis is not None else None,
+        "is_human_confirmed": analysis.is_human_confirmed if analysis is not None else None,
     }
 
 
@@ -87,11 +94,12 @@ def overview(db: Session) -> dict[str, Any]:
     )
 
     recent = [
-        _ticket_summary(ticket, full_name)
-        for ticket, full_name in db.execute(
-            select(Ticket, User.full_name)
+        _ticket_summary(ticket, full_name, analysis)
+        for ticket, full_name, analysis in db.execute(
+            select(Ticket, User.full_name, AIAnalysis)
             .join(Customer, Ticket.customer_id == Customer.id)
             .join(User, Customer.user_id == User.id)
+            .outerjoin(AIAnalysis, AIAnalysis.ticket_id == Ticket.id)
             .order_by(Ticket.created_at.desc())
             .limit(5)
         )
@@ -112,28 +120,51 @@ def overview(db: Session) -> dict[str, Any]:
     }
 
 
-def list_tickets(db: Session, status_filter: TicketStatus | None) -> list[dict[str, Any]]:
+def list_tickets(
+    db: Session,
+    status_filter: TicketStatus | None,
+    review_filter: str | None = None,
+) -> list[dict[str, Any]]:
+    """Ticket list for the triage queue.
+
+    `review_filter` (optional) selects on the AI row instead of ticket status:
+    `awaiting` = analysis completed but not yet human-confirmed — the number the
+    Overview KPI advertises. NULL analyses are excluded from every review filter
+    (there is nothing to review).
+    """
     stmt = (
-        select(Ticket, User.full_name)
+        select(Ticket, User.full_name, AIAnalysis)
         .join(Customer, Ticket.customer_id == Customer.id)
         .join(User, Customer.user_id == User.id)
+        .outerjoin(AIAnalysis, AIAnalysis.ticket_id == Ticket.id)
         .order_by(Ticket.created_at.desc())
     )
     if status_filter is not None:
         stmt = stmt.where(Ticket.status == status_filter)
-    return [_ticket_summary(ticket, name) for ticket, name in db.execute(stmt)]
+    if review_filter == "awaiting":
+        stmt = stmt.where(
+            AIAnalysis.status == AnalysisStatus.COMPLETED,
+            AIAnalysis.is_human_confirmed.is_(False),
+        )
+    elif review_filter == "confirmed":
+        stmt = stmt.where(AIAnalysis.is_human_confirmed.is_(True))
+    return [
+        _ticket_summary(ticket, name, analysis)
+        for ticket, name, analysis in db.execute(stmt)
+    ]
 
 
 def ticket_summary(db: Session, ticket_id: int) -> dict[str, Any]:
     row = db.execute(
-        select(Ticket, User.full_name)
+        select(Ticket, User.full_name, AIAnalysis)
         .join(Customer, Ticket.customer_id == Customer.id)
         .join(User, Customer.user_id == User.id)
+        .outerjoin(AIAnalysis, AIAnalysis.ticket_id == Ticket.id)
         .where(Ticket.id == ticket_id)
     ).first()
     if row is None:
         raise NotFoundError(ticket_id)
-    return _ticket_summary(row[0], row[1])
+    return _ticket_summary(row[0], row[1], row[2])
 
 
 def ticket_detail(db: Session, ticket_id: int) -> dict[str, Any]:
@@ -206,6 +237,24 @@ def update_ticket(
     db.commit()
     db.refresh(ticket)
     return ticket
+
+
+def add_message(db: Session, ticket_id: int, content: str) -> TicketMessage:
+    """Append an ADMIN reply to any ticket (M6 reply loop).
+
+    The customer route (`ticket_service.add_message`) is ownership-scoped and
+    hardcodes `sender=CUSTOMER`, so an admin reply needs its own path: no
+    ownership check (admins see every ticket) and `sender=ADMIN` so the thread
+    records who actually spoke.
+    """
+    ticket = db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise NotFoundError(ticket_id)
+    msg = TicketMessage(sender=MessageSender.ADMIN, content=content.strip())
+    ticket.messages.append(msg)
+    db.commit()
+    db.refresh(msg)
+    return msg
 
 
 def update_analysis(

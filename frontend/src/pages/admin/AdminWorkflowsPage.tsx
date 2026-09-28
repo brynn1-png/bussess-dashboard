@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { Spinner, primaryButtonClass } from "../../components/ui";
+import {
+  LoadError,
+  Spinner,
+  primaryButtonClass,
+} from "../../components/ui";
 import { timeAgo } from "../../lib/format";
 import {
   listWorkflows,
@@ -63,6 +67,7 @@ function RunCounts({ workflow }: { workflow: Workflow }) {
 export function AdminWorkflowsPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [state, setState] = useState<Load>("loading");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,7 +83,7 @@ export function AdminWorkflowsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   if (state === "loading") {
     return (
@@ -90,9 +95,13 @@ export function AdminWorkflowsPage() {
 
   if (state === "error") {
     return (
-      <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-        Could not load workflows. Refresh the page to try again.
-      </p>
+      <LoadError
+        message="Could not load workflows."
+        onRetry={() => {
+          setState("loading");
+          setAttempt((n) => n + 1);
+        }}
+      />
     );
   }
 

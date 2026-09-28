@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   ErrorAlert,
   Field,
+  LoadError,
   PriorityBadge,
   Spinner,
   StatusBadge,
@@ -57,6 +58,17 @@ export function TicketDetailPage() {
     };
   }, [numericId, validId]);
 
+  async function reloadTicket() {
+    setState("loading");
+    try {
+      const data = await getTicket(numericId);
+      setTicket(data);
+      setState("ready");
+    } catch (err) {
+      setState(err instanceof ApiError && err.status === 404 ? "notfound" : "error");
+    }
+  }
+
   async function handleReply(event: FormEvent) {
     event.preventDefault();
     setReplyError(null);
@@ -106,14 +118,17 @@ export function TicketDetailPage() {
 
   if (state === "error" || !ticket) {
     return (
-      <div>
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          Could not load this ticket. Refresh the page to try again.
-        </p>
-        <Link to="/portal" className="mt-4 inline-block text-sm font-medium text-emerald-700 hover:underline">
+      <LoadError
+        message="Could not load this ticket."
+        onRetry={reloadTicket}
+      >
+        <Link
+          to="/portal"
+          className="text-sm font-medium text-red-800 underline underline-offset-2"
+        >
           ← Back to your tickets
         </Link>
-      </div>
+      </LoadError>
     );
   }
 

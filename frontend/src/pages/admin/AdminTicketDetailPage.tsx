@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   ErrorAlert,
   Field,
+  LoadError,
   PriorityBadge,
   Spinner,
   StatusBadge,
@@ -14,6 +15,7 @@ import {
 import { formatDateTime, timeAgo } from "../../lib/format";
 import {
   ApiError,
+  addAdminTicketMessage,
   getAdminTicket,
   updateAdminAnalysis,
   updateAdminTicket,
@@ -64,12 +66,37 @@ export function AdminTicketDetailPage() {
   const [confirmClose, setConfirmClose] = useState(false);
   const [mgmtSaving, setMgmtSaving] = useState(false);
   const [mgmtError, setMgmtError] = useState<string | null>(null);
+  // Neutral "nothing to do" note — deliberately NOT an error (critique P1):
+  // a harmless click must not be punished with a red alert.
+  const [mgmtNotice, setMgmtNotice] = useState<string | null>(null);
   const [mgmtSaved, setMgmtSaved] = useState(false);
+
+  // Admin reply state — closes the AI triage → human → customer loop.
+  const [reply, setReply] = useState("");
+  const [replyError, setReplyError] = useState<string | null>(null);
+  const [replySending, setReplySending] = useState(false);
+  const [replySent, setReplySent] = useState(false);
+  const replyRef = useRef<HTMLTextAreaElement>(null);
+
+  /** Copy the AI's suggested response into the reply box, ready to edit. */
+  function useDraftAsReply() {
+    const draft = analysisDraft.trim();
+    if (!draft) {
+      setReplyError("There's no suggested response to reuse yet.");
+      return;
+    }
+    setReply(draft);
+    setReplyError(null);
+    setReplySent(false);
+    replyRef.current?.focus();
+    replyRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 
   // AI review state.
   const [analysisDraft, setAnalysisDraft] = useState("");
   const [analysisSaving, setAnalysisSaving] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisNotice, setAnalysisNotice] = useState<string | null>(null);
   const [analysisSaved, setAnalysisSaved] = useState(false);
 
   // Seed the forms once per loaded ticket (not on every background update,
@@ -97,6 +124,12 @@ export function AdminTicketDetailPage() {
     const timer = setTimeout(() => setAnalysisSaved(false), 2500);
     return () => clearTimeout(timer);
   }, [analysisSaved]);
+
+  useEffect(() => {
+    if (!replySent) return;
+    const timer = setTimeout(() => setReplySent(false), 2500);
+    return () => clearTimeout(timer);
+  }, [replySent]);
 
   // Keep the previous view while a refetch is in flight (portal pattern:
   // no synchronous setState in effects — initial state covers first load).
@@ -149,7 +182,8 @@ export function AdminTicketDetailPage() {
       payload.category = trimmedCategory;
     }
     if (Object.keys(payload).length === 0) {
-      setMgmtError("No changes to save.");
+      setMgmtError(null);
+      setMgmtNotice("Nothing changed — there's nothing to save.");
       return;
     }
 
@@ -168,6 +202,7 @@ export function AdminTicketDetailPage() {
           : prev,
       );
       setConfirmClose(false);
+      setMgmtNotice(null);
       setMgmtSaved(true);
     } catch (err) {
       setMgmtError(
@@ -198,7 +233,8 @@ export function AdminTicketDetailPage() {
       payload.is_human_confirmed = true;
     }
     if (Object.keys(payload).length === 0) {
-      setAnalysisError("No changes to save.");
+      setAnalysisError(null);
+      setAnalysisNotice("Nothing changed — there's nothing to save.");
       return;
     }
 
@@ -208,6 +244,7 @@ export function AdminTicketDetailPage() {
       setTicket((prev) =>
         prev?.analysis ? { ...prev, analysis: { ...prev.analysis, ...updated } } : prev,
       );
+      setAnalysisNotice(null);
       setAnalysisSaved(true);
     } catch (err) {
       setAnalysisError(
@@ -217,6 +254,34 @@ export function AdminTicketDetailPage() {
       );
     } finally {
       setAnalysisSaving(false);
+    }
+  }
+
+  async function handleReply(event: FormEvent) {
+    event.preventDefault();
+    if (!ticket) return;
+    setReplyError(null);
+    const content = reply.trim();
+    if (!content) {
+      setReplyError("Write a reply before sending it.");
+      return;
+    }
+    setReplySending(true);
+    try {
+      const message = await addAdminTicketMessage(ticket.id, content);
+      setTicket((prev) =>
+        prev ? { ...prev, messages: [...prev.messages, message] } : prev,
+      );
+      setReply("");
+      setReplySent(true);
+    } catch (err) {
+      setReplyError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not send your reply. Please try again.",
+      );
+    } finally {
+      setReplySending(false);
     }
   }
 
@@ -255,17 +320,17 @@ export function AdminTicketDetailPage() {
 
   if (state === "error" || !ticket) {
     return (
-      <div>
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          Could not load this ticket. Refresh the page to try again.
-        </p>
+      <LoadError
+        message="Could not load this ticket."
+        onRetry={reloadTicket}
+      >
         <Link
           to="/admin/tickets"
-          className="mt-4 inline-block text-sm font-medium text-emerald-700 hover:underline"
+          className="text-sm font-medium text-red-800 underline underline-offset-2"
         >
           ← Back to tickets
         </Link>
-      </div>
+      </LoadError>
     );
   }
 
@@ -429,13 +494,24 @@ export function AdminTicketDetailPage() {
                     rows={5}
                     className={`${inputClass} resize-y`}
                     value={analysisDraft}
-                    onChange={(e) => setAnalysisDraft(e.target.value)}
+                    onChange={(e) => {
+                      setAnalysisDraft(e.target.value);
+                      setAnalysisNotice(null);
+                    }}
                     maxLength={10000}
                     placeholder="No suggested response — write one for the customer."
                   />
                 </Field>
 
                 <ErrorAlert message={analysisError} />
+                {analysisNotice && (
+                  <p
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+                    role="status"
+                  >
+                    {analysisNotice}
+                  </p>
+                )}
                 {analysisSaved && (
                   <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                     Analysis saved.
@@ -474,10 +550,71 @@ export function AdminTicketDetailPage() {
                       {analysisSaving ? "Saving…" : "Save changes"}
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={useDraftAsReply}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={!analysisDraft.trim()}
+                    title="Copy this text into the reply box below, ready to edit and send"
+                  >
+                    Use as reply ↓
+                  </button>
                 </div>
               </div>
             )}
           </section>
+
+          <form
+            onSubmit={handleReply}
+            noValidate
+            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="text-sm font-semibold text-slate-900">
+                Reply to customer
+              </h2>
+              <span className="text-xs text-slate-500">
+                Sent as <span className="font-medium text-slate-700">Support</span>
+              </span>
+            </div>
+            <div className="mt-4 flex flex-col gap-4">
+              <ErrorAlert message={replyError} />
+              {replySent && (
+                <p
+                  className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+                  role="status"
+                >
+                  Reply sent — the customer sees it on their ticket.
+                </p>
+              )}
+              <Field
+                label="Your reply"
+                htmlFor="admin-reply"
+                hint="The customer sees this on their ticket, and it stays in the thread above."
+              >
+                <textarea
+                  ref={replyRef}
+                  id="admin-reply"
+                  rows={4}
+                  className={`${inputClass} resize-y`}
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  placeholder="Write your reply…"
+                  maxLength={10000}
+                />
+              </Field>
+              <div>
+                <button
+                  type="submit"
+                  className={primaryButtonClass}
+                  disabled={replySending}
+                >
+                  {replySending && <Spinner className="h-4 w-4" />}
+                  {replySending ? "Sending…" : "Send reply"}
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
 
         <aside className="mt-6 flex flex-col gap-6 lg:mt-0">
@@ -489,6 +626,14 @@ export function AdminTicketDetailPage() {
             <h2 className="text-sm font-semibold text-slate-900">Manage ticket</h2>
             <div className="mt-4 flex flex-col gap-4">
               <ErrorAlert message={mgmtError} />
+              {mgmtNotice && (
+                <p
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+                  role="status"
+                >
+                  {mgmtNotice}
+                </p>
+              )}
               {mgmtSaved && (
                 <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                   Changes saved.
@@ -503,6 +648,7 @@ export function AdminTicketDetailPage() {
                   onChange={(e) => {
                     setStatusForm(e.target.value as TicketStatus);
                     setConfirmClose(false);
+                    setMgmtNotice(null);
                   }}
                 >
                   {STATUSES.map((value) => (
@@ -518,9 +664,10 @@ export function AdminTicketDetailPage() {
                   id="manage-priority"
                   className={inputClass}
                   value={priorityForm}
-                  onChange={(e) =>
-                    setPriorityForm(e.target.value as TicketPriority | "")
-                  }
+                  onChange={(e) => {
+                    setPriorityForm(e.target.value as TicketPriority | "");
+                    setMgmtNotice(null);
+                  }}
                 >
                   {ticket.priority === null && (
                     <option value="" disabled>
@@ -545,7 +692,10 @@ export function AdminTicketDetailPage() {
                   type="text"
                   className={inputClass}
                   value={categoryValue}
-                  onChange={(e) => setCategoryValue(e.target.value)}
+                  onChange={(e) => {
+                    setCategoryValue(e.target.value);
+                    setMgmtNotice(null);
+                  }}
                   maxLength={50}
                   placeholder="e.g. billing"
                 />

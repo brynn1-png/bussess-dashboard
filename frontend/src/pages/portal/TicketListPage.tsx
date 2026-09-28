@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
+  LoadError,
   PriorityBadge,
   Spinner,
   StatusBadge,
@@ -15,6 +16,7 @@ type Load = "loading" | "ready" | "error";
 export function TicketListPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [state, setState] = useState<Load>("loading");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,7 +32,7 @@ export function TicketListPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   return (
     <div>
@@ -50,9 +52,15 @@ export function TicketListPage() {
       )}
 
       {state === "error" && (
-        <p className="mt-8 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          Could not load your tickets. Refresh the page to try again.
-        </p>
+        <div className="mt-8">
+          <LoadError
+            message="Could not load your tickets."
+            onRetry={() => {
+              setState("loading");
+              setAttempt((n) => n + 1);
+            }}
+          />
+        </div>
       )}
 
       {state === "ready" && tickets.length === 0 && (

@@ -209,7 +209,14 @@ export interface AdminTicketSummary {
   customer_name: string;
   created_at: string;
   updated_at: string;
+  /** AI row state; null when the ticket has no analysis yet. */
+  analysis_status: "pending" | "completed" | "failed" | null;
+  /** null = no analysis · false = awaiting review · true = human-confirmed. */
+  is_human_confirmed: boolean | null;
 }
+
+/** AI review states the ticket list can filter on (`?review=`). */
+export type ReviewFilter = "awaiting" | "confirmed";
 
 export interface AdminOverview {
   total_tickets: number;
@@ -275,9 +282,13 @@ export function getAdminOverview(): Promise<AdminOverview> {
 
 export function listAdminTickets(
   status?: TicketStatus,
+  review?: ReviewFilter,
 ): Promise<AdminTicketSummary[]> {
-  const query = status ? `?status=${encodeURIComponent(status)}` : "";
-  return request<AdminTicketSummary[]>(`/admin/tickets${query}`);
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (review) params.set("review", review);
+  const query = params.toString();
+  return request<AdminTicketSummary[]>(`/admin/tickets${query ? `?${query}` : ""}`);
 }
 
 export function getAdminTicket(id: number): Promise<AdminTicketDetail> {
@@ -309,6 +320,17 @@ export function updateAdminAnalysis(
   return request<AdminAnalysis>(`/admin/tickets/${id}/analysis`, {
     method: "PATCH",
     body: JSON.stringify(payload),
+  });
+}
+
+/** POST — admin reply. Sender is set server-side to `admin`, not by the client. */
+export function addAdminTicketMessage(
+  id: number,
+  content: string,
+): Promise<TicketMessage> {
+  return request<TicketMessage>(`/admin/tickets/${id}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
   });
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
+  LoadError,
   PriorityBadge,
   Spinner,
   StatusBadge,
@@ -55,6 +56,7 @@ const PRIORITY_BAR_COLORS: Record<(typeof PRIORITY_ORDER)[number], string> = {
 export function AdminOverviewPage() {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [state, setState] = useState<Load>("loading");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,7 +72,7 @@ export function AdminOverviewPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   if (state === "loading") {
     return (
@@ -82,9 +84,13 @@ export function AdminOverviewPage() {
 
   if (state === "error" || !overview) {
     return (
-      <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-        Could not load the overview. Refresh the page to try again.
-      </p>
+      <LoadError
+        message="Could not load the overview."
+        onRetry={() => {
+          setState("loading");
+          setAttempt((n) => n + 1);
+        }}
+      />
     );
   }
 
@@ -104,7 +110,10 @@ export function AdminOverviewPage() {
       </p>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard label="Tickets" value={overview.total_tickets} />
+        <KpiCard
+          label="Tickets"
+          value={overview.total_tickets}
+        />
         <KpiCard label="Customers" value={overview.total_customers} />
         <KpiCard
           label="Avg priority"
@@ -115,11 +124,21 @@ export function AdminOverviewPage() {
           }
           hint="1 low · 4 urgent"
         />
-        <KpiCard
-          label="Awaiting review"
-          value={overview.ai.awaiting_review}
-          hint="AI finished, not confirmed"
-        />
+        {/* The product's most valuable number — now a link to the queue it counts. */}
+        <Link
+          to="/admin/tickets?review=awaiting"
+          className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+        >
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            Awaiting review
+          </p>
+          <p className="mt-1.5 text-2xl font-bold tabular-nums tracking-tight text-slate-900">
+            {overview.ai.awaiting_review}
+          </p>
+          <p className="mt-1 text-xs font-medium text-emerald-700">
+            Review queue →
+          </p>
+        </Link>
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { Spinner } from "../../components/ui";
+import { LoadError, Spinner } from "../../components/ui";
 import { formatDateTime } from "../../lib/format";
 import {
   listAdminCustomers,
@@ -12,6 +12,7 @@ type Load = "loading" | "ready" | "error";
 export function AdminCustomersPage() {
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
   const [state, setState] = useState<Load>("loading");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -27,7 +28,7 @@ export function AdminCustomersPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   if (state === "loading") {
     return (
@@ -39,9 +40,13 @@ export function AdminCustomersPage() {
 
   if (state === "error") {
     return (
-      <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-        Could not load customers. Refresh the page to try again.
-      </p>
+      <LoadError
+        message="Could not load customers."
+        onRetry={() => {
+          setState("loading");
+          setAttempt((n) => n + 1);
+        }}
+      />
     );
   }
 

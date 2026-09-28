@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { Spinner } from "../../components/ui";
+import { LoadError, Spinner } from "../../components/ui";
 import {
   getAdminAnalytics,
   type AdminAnalytics,
@@ -74,6 +74,7 @@ export function AdminAnalyticsPage() {
   const [days, setDays] = useState<(typeof WINDOWS)[number]>(30);
   const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   // No synchronous setState in the effect (lint + portal pattern): the
   // previous window stays on screen while the next one loads, detected by
@@ -92,16 +93,20 @@ export function AdminAnalyticsPage() {
     return () => {
       cancelled = true;
     };
-  }, [days]);
+  }, [days, attempt]);
 
   const loading = analytics === null || analytics.days !== days;
 
   if (loading) {
     if (failed) {
       return (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          Could not load analytics. Refresh the page to try again.
-        </p>
+        <LoadError
+          message="Could not load analytics."
+          onRetry={() => {
+            setFailed(false);
+            setAttempt((n) => n + 1);
+          }}
+        />
       );
     }
     return (
@@ -113,9 +118,13 @@ export function AdminAnalyticsPage() {
 
   if (failed || !analytics) {
     return (
-      <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-        Could not load analytics. Refresh the page to try again.
-      </p>
+      <LoadError
+        message="Could not load analytics."
+        onRetry={() => {
+          setFailed(false);
+          setAttempt((n) => n + 1);
+        }}
+      />
     );
   }
 

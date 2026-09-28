@@ -10,6 +10,7 @@ from app.database.session import get_db
 from app.models.enums import TicketStatus
 from app.models.user import User
 from app.schemas.admin import (
+    AdminMessageResponse,
     AdminTicketDetail,
     AdminTicketSummary,
     AnalysisResponse,
@@ -18,10 +19,14 @@ from app.schemas.admin import (
     UpdateAnalysisRequest,
     UpdateTicketRequest,
 )
+from app.schemas.ticket import AddMessageRequest
 from app.schemas.workflow import AnalyticsResponse
 from app.services import admin_service, workflow_service
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+# AI review-state filters for the triage queue (tickets list `?review=`).
+_REVIEW_FILTERS = ("awaiting", "confirmed")
 
 
 def _map_error(exc: Exception) -> HTTPException:
@@ -61,10 +66,16 @@ def overview(
 @router.get("/tickets", response_model=list[AdminTicketSummary])
 def list_tickets(
     status_filter: TicketStatus | None = Query(default=None, alias="status"),
+    review_filter: str | None = Query(default=None, alias="review"),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> list[AdminTicketSummary]:
-    rows = admin_service.list_tickets(db, status_filter)
+    if review_filter is not None and review_filter not in _REVIEW_FILTERS:
+        raise HTTPException(
+            status_code=http_status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Invalid review filter. Expected one of: {', '.join(_REVIEW_FILTERS)}",
+        )
+    rows = admin_service.list_tickets(db, status_filter, review_filter)
     return [AdminTicketSummary.model_validate(row) for row in rows]
 
 
@@ -110,6 +121,25 @@ def update_analysis(
     except admin_service.NotFoundError as exc:
         raise _map_error(exc)
     return AnalysisResponse.model_validate(analysis)
+
+
+@router.post(
+    "/tickets/{ticket_id}/messages",
+    response_model=AdminMessageResponse,
+    status_code=http_status.HTTP_201_CREATED,
+)
+def add_message(
+    ticket_id: int,
+    payload: AddMessageRequest,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> AdminMessageResponse:
+    """Admin reply on any ticket — closes the AI triage → human → customer loop."""
+    try:
+        message = admin_service.add_message(db, ticket_id, payload.content)
+    except admin_service.NotFoundError as exc:
+        raise _map_error(exc)
+    return AdminMessageResponse.model_validate(message)
 
 
 @router.get("/customers", response_model=list[CustomerRow])

@@ -16,6 +16,9 @@ class AdminTicketSummary(BaseModel):
     customer_name: str
     created_at: datetime
     updated_at: datetime
+    # AI review state for the triage queue; None when the ticket has no analysis row.
+    analysis_status: AnalysisStatus | None = None
+    is_human_confirmed: bool | None = None
 
 
 class StatusCounts(BaseModel):

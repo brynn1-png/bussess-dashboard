@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ErrorAlert,
   Field,
+  LoadError,
   Spinner,
   inputClass,
   primaryButtonClass,
@@ -117,6 +118,7 @@ export function AdminWorkflowFormPage() {
   const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   // Load existing workflow + run history (edit mode only).
   useEffect(() => {
@@ -140,7 +142,7 @@ export function AdminWorkflowFormPage() {
     return () => {
       cancelled = true;
     };
-  }, [isNew, numericId, validId]);
+  }, [isNew, numericId, validId, attempt]);
 
   // Clear the "Saved" flash after a short delay.
   useEffect(() => {
@@ -172,12 +174,23 @@ export function AdminWorkflowFormPage() {
       setError("Add at least one action.");
       return;
     }
-    if (conditions.some((condition) => condition.value.trim().length === 0)) {
-      setError("Every condition needs a value.");
+    // Name the exact row — "Every condition needs a value" makes the admin hunt.
+    const emptyCondition = conditions.findIndex(
+      (condition) => condition.value.trim().length === 0,
+    );
+    if (emptyCondition !== -1) {
+      setError(
+        `Condition ${emptyCondition + 1} needs a value — pick one before saving.`,
+      );
       return;
     }
-    if (actions.some((action) => action.value.trim().length === 0)) {
-      setError("Every action needs a value.");
+    const emptyAction = actions.findIndex(
+      (action) => action.value.trim().length === 0,
+    );
+    if (emptyAction !== -1) {
+      setError(
+        `Action ${emptyAction + 1} (${ACTION_LABELS[actions[emptyAction].type]}) needs a value.`,
+      );
       return;
     }
 
@@ -256,9 +269,13 @@ export function AdminWorkflowFormPage() {
   if (state === "error") {
     return (
       <div>
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          Could not load this workflow. Refresh the page to try again.
-        </p>
+        <LoadError
+          message="Could not load this workflow."
+          onRetry={() => {
+            setState("loading");
+            setAttempt((n) => n + 1);
+          }}
+        />
         <Link
           to="/admin/workflows"
           className="mt-4 inline-block text-sm font-medium text-emerald-700 hover:underline"
@@ -588,7 +605,7 @@ export function AdminWorkflowFormPage() {
         </div>
       </form>
 
-      {!isNew && (
+      {!isNew && workflow && (
         <>
           <section className="mt-8">
             <h2 className="text-sm font-semibold text-slate-900">Recent runs</h2>
@@ -639,6 +656,19 @@ export function AdminWorkflowFormPage() {
               already touched are not changed.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
+              {confirmDelete && !deleting && (
+                <p
+                  className="w-full rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+                  role="alert"
+                >
+                  This permanently removes <strong>{workflow.name}</strong> and
+                  its {runs.length} recorded run{runs.length === 1 ? "" : "s"}.
+                  Tickets it already changed keep their tags and priority.
+                  <span className="mt-1 block font-semibold">
+                    There is no undo — click Confirm delete to apply.
+                  </span>
+                </p>
+              )}
               <button
                 type="button"
                 onClick={handleDelete}

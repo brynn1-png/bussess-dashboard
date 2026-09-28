@@ -19,6 +19,7 @@ ADMIN_ROUTES = [
     ("GET", "/api/admin/customers", None),
     ("PATCH", "/api/admin/tickets/1", {"status": "open"}),
     ("PATCH", "/api/admin/tickets/1/analysis", {"is_human_confirmed": True}),
+    ("POST", "/api/admin/tickets/1/messages", {"content": "A reply from support."}),
 ]
 
 
@@ -233,6 +234,143 @@ def test_update_analysis_404_when_no_analysis_row(client, db_session):
         json={"is_human_confirmed": True},
     )
     assert res.status_code == 404
+
+
+# --- Triage queue: AI review filters ------------------------------------------
+
+
+def test_review_filter_awaiting_and_confirmed(client, db_session):
+    admin, (t1, t2, t3) = seed_three_tickets(client, db_session)
+    ha = auth(admin)
+
+    # Every seeded ticket has a completed, unconfirmed analysis (mock).
+    awaiting = client.get("/api/admin/tickets?review=awaiting", headers=ha).json()
+    assert {t["id"] for t in awaiting} == {t1, t2, t3}
+    assert all(t["analysis_status"] == "completed" for t in awaiting)
+    assert all(t["is_human_confirmed"] is False for t in awaiting)
+
+    # Confirm exactly one → it leaves the queue and joins `confirmed`.
+    assert client.patch(
+        f"/api/admin/tickets/{t1}/analysis", headers=ha, json={"is_human_confirmed": True}
+    ).status_code == 200
+
+    awaiting = client.get("/api/admin/tickets?review=awaiting", headers=ha).json()
+    assert {t["id"] for t in awaiting} == {t2, t3}
+    confirmed = client.get("/api/admin/tickets?review=confirmed", headers=ha).json()
+    assert [t["id"] for t in confirmed] == [t1]
+
+    # The Overview KPI and the queue agree — same predicate, server-side.
+    overview = client.get("/api/admin/overview", headers=ha).json()
+    assert overview["ai"]["awaiting_review"] == len(awaiting)
+
+
+def test_review_filter_combines_with_status_and_validates(client, db_session):
+    admin, (t1, t2, t3) = seed_three_tickets(client, db_session)
+    ha = auth(admin)
+
+    # Confirm t1, then put it in_progress — both filters must hold at once.
+    client.patch(f"/api/admin/tickets/{t1}/analysis", headers=ha, json={"is_human_confirmed": True})
+    client.patch(f"/api/admin/tickets/{t2}", headers=ha, json={"status": "in_progress"})
+
+    both = client.get(
+        "/api/admin/tickets?review=awaiting&status=in_progress", headers=ha
+    ).json()
+    assert [t["id"] for t in both] == [t2]
+
+    # Status-only still returns everything unconfirmed by review.
+    assert len(client.get("/api/admin/tickets?status=in_progress", headers=ha).json()) == 1
+    assert len(client.get("/api/admin/tickets", headers=ha).json()) == 3
+
+    # Bad review value is a 422, not a silent no-op.
+    res = client.get("/api/admin/tickets?review=bogus", headers=ha)
+    assert res.status_code == 422
+    assert client.get("/api/admin/tickets?review=bogus", headers=auth(admin)).status_code == 422
+    # t3 untouched by the setup above.
+    assert {t["id"] for t in client.get("/api/admin/tickets", headers=ha).json()} == {t1, t2, t3}
+
+
+def test_ticket_summary_reports_ai_review_state(client, db_session):
+    admin, (t1, _, _) = seed_three_tickets(client, db_session)
+    ha = auth(admin)
+
+    row = client.get("/api/admin/tickets", headers=ha).json()[0]
+    assert row["analysis_status"] == "completed"
+    assert row["is_human_confirmed"] is False
+
+    # The PATCH response carries the same state (used by the list after an edit).
+    patched = client.patch(
+        f"/api/admin/tickets/{t1}", headers=ha, json={"status": "in_progress"}
+    ).json()
+    assert patched["analysis_status"] == "completed"
+    assert patched["is_human_confirmed"] is False
+
+
+# --- Admin reply (M6 reply loop) ----------------------------------------------
+
+
+def test_admin_reply_posts_as_admin_and_reaches_customer(client, db_session):
+    admin, (t1, _, t3) = seed_three_tickets(client, db_session)
+    ha = auth(admin)
+
+    res = client.post(
+        f"/api/admin/tickets/{t1}/messages",
+        headers=ha,
+        json={"content": "Refund issued — it will clear in 3–5 days."},
+    )
+    assert res.status_code == 201, res.text
+    body = res.json()
+    assert body["sender"] == "admin"
+    assert body["ticket_id"] == t1
+    assert body["content"] == "Refund issued — it will clear in 3–5 days."
+
+    # The reply is on the thread both sides read.
+    detail = client.get(f"/api/admin/tickets/{t1}", headers=ha).json()
+    assert detail["messages"][-1]["sender"] == "admin"
+    assert len(detail["messages"]) == 2
+
+    # An admin may reply to ANY customer's ticket — seed_three_tickets gives
+    # t3 to Bob while t1 belongs to Alice; no ownership scoping applies.
+    res = client.post(
+        f"/api/admin/tickets/{t3}/messages",
+        headers=ha,
+        json={"content": "Escalating this outage now."},
+    )
+    assert res.status_code == 201
+    assert res.json()["sender"] == "admin"
+
+
+def test_admin_reply_validation_and_missing_ticket(client, db_session):
+    admin, (t1, _, _) = seed_three_tickets(client, db_session)
+    ha = auth(admin)
+
+    # Reuses the customer AddMessageRequest limits: empty and over-long are 422.
+    assert client.post(f"/api/admin/tickets/{t1}/messages", headers=ha, json={"content": ""}).status_code == 422
+    assert client.post(
+        f"/api/admin/tickets/{t1}/messages", headers=ha, json={"content": "x" * 10001}
+    ).status_code == 422
+    assert client.post(
+        "/api/admin/tickets/99999/messages", headers=ha, json={"content": "hello there"}
+    ).status_code == 404
+
+
+def test_admin_reply_trims_and_customer_route_still_forbidden(client, db_session):
+    admin, (t1, _, _) = seed_three_tickets(client, db_session)
+    ha = auth(admin)
+
+    res = client.post(
+        f"/api/admin/tickets/{t1}/messages",
+        headers=ha,
+        json={"content": "  Padded reply  "},
+    )
+    assert res.status_code == 201
+    assert res.json()["content"] == "Padded reply"
+
+    # The customer-owned route still rejects admins (unchanged M2 behaviour).
+    customer = register(client, "owner@example.com", name="Owner")
+    own = submit(client, customer, subject="My own ticket")
+    assert client.post(
+        f"/api/tickets/{own}/messages", headers=ha, json={"content": "admin trying here"}
+    ).status_code == 403
 
 
 # --- Customers ----------------------------------------------------------------
