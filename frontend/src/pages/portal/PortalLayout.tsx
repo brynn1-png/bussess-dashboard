@@ -62,7 +62,7 @@ export function PortalLayout() {
             </nav>
 
             {/* Stacked, not inline: keeps the tab row on one line in both shells. */}
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-col sm:flex-row items-center gap-2">
               <span className="hidden max-w-[9rem] truncate text-sm leading-tight text-panel-600 sm:block">
                 {user?.full_name}
               </span>
