@@ -1,6 +1,11 @@
 """Application configuration loaded from environment variables / .env."""
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Repo root: <root>/backend/app/core/config.py -> parents[3] is <root>.
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 class ConfigurationError(RuntimeError):
@@ -29,6 +34,11 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.2"
     ollama_api_key: str = ""  # required for Ollama cloud; empty for local Ollama
     ollama_timeout_seconds: float = 60.0
+
+    # Built single-page app served by this process in the container deploy.
+    # Defaults to <repo>/frontend/dist; the SPA is only mounted when the
+    # directory actually holds an index.html, so dev and tests are unaffected.
+    static_dir: str = str(REPO_ROOT / "frontend" / "dist")
 
 
 settings = Settings()

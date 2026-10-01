@@ -5,6 +5,7 @@
 - Key confirmed decisions: customer accounts with login (D1), mock-first AI provider (D2), Supabase-hosted PostgreSQL (D6), SQLite for tests only, `PLAN.md` approved with D3–D7.
 - UI-pass decisions (2026-09-28): direction contract = *pneumatic-tube dispatch desk* (`.impeccable/surfaces/frontend-src.md`, seed `774ed214`); six-hue palette law with no green and priority-as-band-count; provenance carried by border style + head-strip color + typeface; seal signer persisted in `ai_analysis.confirmed_by` (migration `f3c9a1d70b52`); `panel-500` darkened to `#5e656c` for 4.85:1 on the ground; the skill's question rounds and decision page skipped per the user's "don't ask me" instruction.
 - Later decisions (2026-10-01): **deployment hardening assessed and consciously declined** — this is a demo build, so the published demo credentials and the single-origin constraint are intentional, and the gaps (no Docker/CI/CORS/rate-limiting, unpinned requirements, 5 live demo accounts) are recorded rather than closed; **MCP config pins `document-generator-mcp@1.0.9` over `@latest`** and uses a **Windows-native npx cache path** instead of the README's non-existent `/tmp/.npx-cache` (that flag is the documented fix for a stale-cache error, so it was kept and repointed).
+- Deploy decisions (2026-10-01): **one process serves both the API and the SPA** (mounts `frontend/dist` in FastAPI) because the relative `BASE_URL = "/api"` plus `BrowserRouter` force a single origin — so no CORS, no `VITE_API_URL`, and no secret in the bundle; the catch-all 404s unmatched `/api/*` as JSON so a typo'd endpoint never returns `200` HTML. **Target Render free tier via `render.yaml`, with `AI_PROVIDER=mock`** so the still-valid leaked Ollama key stays out of the deployed trust surface. Migrations run in `CMD` before uvicorn; requirements pinned to the tested versions. **The image was never built locally — Docker is not installed on this machine.**
 - Full architecture decisions live in `.ai/architecture.md` §12; roadmap in `PLAN.md`.
 
 ---
@@ -12,6 +13,25 @@
 ## Decision Log
 
 <!-- Format: date, decision, reasoning, alternatives considered -->
+
+### 2026-10-01 — Deployment shape: one process serving both API and SPA
+
+- **Decision:** mount the built SPA inside FastAPI (`StaticFiles` at `/assets` + a fallback to `index.html` for client-side routes) rather than deploying the frontend and backend as two services.
+- **Reasoning:** `api.ts:10` sets a **relative** `BASE_URL = "/api"` and the router is `BrowserRouter`, so the browser treats the app and the API as one host. Serving both from one process satisfies that natively. It also removes the need for `CORSMiddleware`, a `VITE_API_URL` build variable, and any risk of shipping a secret to the browser. One service is also one thing to fail, one health check, one deploy.
+- **Contract kept intact:** the catch-all is registered **after** all API routers and explicitly 404s any unmatched `/api/*` path as JSON. Without that guard a typo'd endpoint would return `200` with an HTML body, which would quietly break any client error handling.
+- **Guard against traversal:** a path is only served from disk when its *resolved* location is inside the build root; everything else falls through to the shell.
+- **Deactivation:** the mount is a no-op unless `<static_dir>/index.html` exists, so `vite dev` and the test suite behave exactly as before. This is why the change is safe to land in the same commit as the deploy files.
+- **Alternatives considered:** two origins with CORS + absolute API base (rejected — touches the API client and adds a cross-origin failure mode for no gain); Vercel for the SPA plus a separate API host (rejected — splits one deploy into two and breaks the relative-URL assumption); serving `dist` from nginx in front of uvicorn (rejected — adds a second moving part and a second thing to misconfigure for a single-service demo).
+
+### 2026-10-01 — Deploy target: Render free tier with `AI_PROVIDER=mock`
+
+- **Decision:** Render blueprint (`render.yaml`) on the free plan, Docker runtime, with the deployed service pinned to `AI_PROVIDER=mock`.
+- **Reasoning:** the blueprint is committed config, so the deploy is reproducible and reviewable rather than a dashboard ritual. `mock` was chosen over `ollama` deliberately: it is deterministic, free, always available, and **removes the leaked API key from the deployed trust surface entirely**. The live Ollama test passing locally proves that key is still valid, so keeping `ollama` in production would mean shipping a compromised credential.
+- **Migrations run in `CMD`** (`alembic upgrade head && exec uvicorn ...`) so a fresh database reaches head on first boot. `exec` is used so uvicorn becomes PID 1 and the platform can stop the container cleanly.
+- **Requirements pinned** to the versions the 78-test suite was verified against. The previous `>=` ranges made the image non-reproducible — a rebuild months later could pull different major versions. `bcrypt==4.0.1` stays pinned because passlib 1.7.4 breaks on bcrypt ≥ 4.1; a comment records why so nobody "helpfully" unpins it.
+- **Security posture is unchanged and documented, not hidden:** no login rate limiting and 5 demo accounts with a published password. The README's Deploying section states both plainly, plus the `seed_demo --remove` and `create_admin` escape hatches, rather than letting a public URL imply the app is hardened.
+- **Known-accepted limits of the free tier**, recorded so they are not rediscovered as bugs: the service sleeps after ~15 min idle and cold-starts on the next request, and a free-tier Supabase project pauses after ~1 week of inactivity, which will present as API connection timeouts that look like an app fault.
+- **Not proven:** Docker is not installed on this machine, so the image was never built here. Every command in it was verified individually and the container's exact start command was run locally, but the first Render build is the real verification.
 
 ### 2026-10-01 — Deployment hardening: assessed, then consciously declined
 

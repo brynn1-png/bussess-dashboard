@@ -17,3 +17,9 @@ dist/
 .vscode/
 .idea/
 Thumbs.db
+
+# Generated documents (document-generator MCP output)
+generated_documents/
+
+# Local agent tooling: opencode.json hardcodes a machine-specific npx cache path
+opencode.json
