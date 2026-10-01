@@ -31,7 +31,7 @@
 - **Requirements pinned** to the versions the 78-test suite was verified against. The previous `>=` ranges made the image non-reproducible — a rebuild months later could pull different major versions. `bcrypt==4.0.1` stays pinned because passlib 1.7.4 breaks on bcrypt ≥ 4.1; a comment records why so nobody "helpfully" unpins it.
 - **Security posture is unchanged and documented, not hidden:** no login rate limiting and 5 demo accounts with a published password. The README's Deploying section states both plainly, plus the `seed_demo --remove` and `create_admin` escape hatches, rather than letting a public URL imply the app is hardened.
 - **Known-accepted limits of the free tier**, recorded so they are not rediscovered as bugs: the service sleeps after ~15 min idle and cold-starts on the next request, and a free-tier Supabase project pauses after ~1 week of inactivity, which will present as API connection timeouts that look like an app fault.
-- **Not proven:** Docker is not installed on this machine, so the image was never built here. Every command in it was verified individually and the container's exact start command was run locally, but the first Render build is the real verification.
+- **Build proof, previously open, now closed:** Docker is not installed on this machine, so the image could not be built locally — every command in it was verified individually and the container's exact start command was run locally instead. **Render's builder subsequently compiled `4b3f658` successfully**, which is the verification that was missing. Deployment ran through the blueprint (`bussess-dashboard-blueprint`, service `bussess-dashboard`, ID `exs-dav3bk17lnhs73alarr0`).
 
 ### 2026-10-01 — Deployment hardening: assessed, then consciously declined
 
