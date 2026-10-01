@@ -4,6 +4,7 @@
 
 - Key confirmed decisions: customer accounts with login (D1), mock-first AI provider (D2), Supabase-hosted PostgreSQL (D6), SQLite for tests only, `PLAN.md` approved with D3–D7.
 - UI-pass decisions (2026-09-28): direction contract = *pneumatic-tube dispatch desk* (`.impeccable/surfaces/frontend-src.md`, seed `774ed214`); six-hue palette law with no green and priority-as-band-count; provenance carried by border style + head-strip color + typeface; seal signer persisted in `ai_analysis.confirmed_by` (migration `f3c9a1d70b52`); `panel-500` darkened to `#5e656c` for 4.85:1 on the ground; the skill's question rounds and decision page skipped per the user's "don't ask me" instruction.
+- Later decisions (2026-10-01): **deployment hardening assessed and consciously declined** — this is a demo build, so the published demo credentials and the single-origin constraint are intentional, and the gaps (no Docker/CI/CORS/rate-limiting, unpinned requirements, 5 live demo accounts) are recorded rather than closed; **MCP config pins `document-generator-mcp@1.0.9` over `@latest`** and uses a **Windows-native npx cache path** instead of the README's non-existent `/tmp/.npx-cache` (that flag is the documented fix for a stale-cache error, so it was kept and repointed).
 - Full architecture decisions live in `.ai/architecture.md` §12; roadmap in `PLAN.md`.
 
 ---
@@ -11,6 +12,23 @@
 ## Decision Log
 
 <!-- Format: date, decision, reasoning, alternatives considered -->
+
+### 2026-10-01 — Deployment hardening: assessed, then consciously declined
+
+- **Decision:** the readiness assessment is **recorded but not acted on**. The project stays a demo build.
+- **Reasoning:** the user stated the project "is created for demo, not production" and declined the hardening items after seeing the assessment. Documenting the gaps rather than closing them is the honest outcome: a future session can see exactly what a production deploy would require (Dockerfile or platform config, CI, `CORSMiddleware` or a single-origin deploy, login rate limiting, pinned `requirements.txt`, and removal of the five published demo accounts) instead of assuming the project is deploy-ready.
+- **Consequence recorded deliberately:** the demo credentials printed in the README are **intentional and desirable** for a portfolio demo, and the single-origin constraint from `BrowserRouter` + relative `BASE_URL = "/api"` is a feature here — it means one command starts the whole thing.
+
+### 2026-10-01 — MCP server config: pin the version, use a native cache path
+
+- **Decision:** `opencode.json` registers `document-generator` as `npx --yes --cache C:\Users\bryan\AppData\Local\Temp\opencode\npx-cache document-generator-mcp@1.0.9`.
+- **Reasoning (two deliberate deviations from the server's own README):**
+  1. **Pinned `1.0.9`, not `@latest`.** A committed config that tracks `latest` can break on an unannounced release with no diff to blame. Pinning makes the config reproducible and turns upgrades into a decision.
+  2. **A Windows-native cache path.** The README's `--cache /tmp/.npx-cache` is POSIX and does not exist on this platform; that flag is also the documented fix for the `use strict: not found` error caused by a stale npx cache, so it was worth keeping and repointing. Verified: the directory is created and the server responds through it.
+- **Also used the V2 config shape** — servers live under `mcp.servers.<name>`, not top-level `mcp.<name>`, per the current OpenCode docs.
+- **Verification discipline:** the server was proven to start *before* the config was written (raw `tools/list` JSON-RPC pipe → both tools returned), and the finished file was parsed as JSON and then confirmed via `opencode mcp list` → `✓ connected`. Neither the tool's config-save nor the document server's success message was taken on trust.
+- **Alternatives considered:** `@latest` (rejected — silent breakage); omitting `--cache` entirely (rejected — drops the documented workaround for a real error); a relative cache path inside the repo (rejected — would litter the working tree); adding the MCP config to the user's global config instead of the project (rejected — the server was requested for *this* project).
+- **Open:** the absolute cache path makes the file **machine-specific**. Committing it is fine for a personal project; gitignoring it is better if this repo is cloned elsewhere. The user's call.
 
 ### 2026-09-27 — Customer identity: accounts with login
 
